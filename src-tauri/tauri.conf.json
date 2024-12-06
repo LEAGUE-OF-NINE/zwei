@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Zwei: Your Shield",
-        "width": 800,
-        "height": 600
+        "width": 500,
+        "height": 550
       }
     ],
     "security": {

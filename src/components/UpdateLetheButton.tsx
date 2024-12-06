@@ -8,7 +8,7 @@ const UpdateLetheButton = () => {
       console.error("Failed to clone folder:", error);
     }
   }
-  return <button className="btn btn-primary" onClick={updateLethe}>Update Lethe</button>;
+  return <button className="btn btn-sm btn-ghost" onClick={updateLethe}>Update Lethe</button>;
 };
 
 export default UpdateLetheButton;

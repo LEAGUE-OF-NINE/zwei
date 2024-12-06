@@ -12,12 +12,13 @@ const UpdateLimbus = () => {
     setPath(file);
   }
 
-  async function cloneFolder() {
+  async function updateLimbus() {
     if (path) {
       try {
         // Call the Tauri command to clone the folder
         await invoke("clone_folder_to_game", { srcPath: path });
         await invoke("download_and_extract_bepinex");
+        await invoke("download_and_install_lethe");
       } catch (error) {
         console.error("Failed to clone folder:", error);
       }
@@ -35,8 +36,8 @@ const UpdateLimbus = () => {
         placeholder={path || "Select Folder..."}
         readOnly
       />
-      <button className="btn btn-accent" onClick={cloneFolder} disabled={!path}>
-        <span>Clone/Install</span>
+      <button className="btn btn-accent" onClick={updateLimbus} disabled={!path}>
+        <span>Update Limbus</span>
       </button>
     </div>
   );

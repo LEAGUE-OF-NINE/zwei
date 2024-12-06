@@ -57,6 +57,19 @@ fn download_and_extract_bepinex() {
     println!("Unzipped the file successfully.");
 }
 
+#[tauri::command]
+fn download_and_install_lethe() {
+    let url = ""; // TODO: Add lethe url
+    let destination = "game/bepinex/plugins";
+
+    if let Err(e) = download_file(url, destination) {
+        eprintln!("Failed to download the file: {}", e);
+        return;
+    }
+
+    println!("Downloaded the file successfully.");
+}
+
 fn download_file(url: &str, destination: &str) -> Result<(), Box<dyn std::error::Error>> {
     let response = get(url)?;
     let mut file = File::create(destination)?;
@@ -95,7 +108,8 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             clone_folder_to_game,
-            download_and_extract_bepinex
+            download_and_extract_bepinex,
+            download_and_install_lethe
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

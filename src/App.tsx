@@ -1,5 +1,8 @@
 import "./App.css";
-import CloneLimbus from "./components/CloneLimbus";
+import StartLethe from "./components/StartLethe";
+import UpdateLetheButton from "./components/UpdateLetheButton";
+import UpdateLimbus from "./components/UpdateLimbus";
+import ViewLetheFiles from "./components/ViewLetheFilesButton";
 
 function App() {
   return (
@@ -8,8 +11,12 @@ function App() {
         <img src="./Zwei.png" alt="Zwei: Your Shield" />
         <h1 className="text-2xl">Zwei - Your Shield</h1>
       </div>
-
-      <CloneLimbus />
+      <UpdateLimbus />
+      <div className="flex gap-2">
+        <StartLethe />
+        <UpdateLetheButton />
+        <ViewLetheFiles />
+      </div>
     </main>
   );
 }

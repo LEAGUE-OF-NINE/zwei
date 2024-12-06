@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-const CloneLimbus = () => {
+const UpdateLimbus = () => {
   const [path, setPath] = useState<string | null>(null);
 
   async function selectFolder() {
@@ -11,7 +11,7 @@ const CloneLimbus = () => {
     });
     setPath(file);
   }
-  
+
   async function cloneFolder() {
     if (path) {
       try {
@@ -27,30 +27,19 @@ const CloneLimbus = () => {
   }
 
   return (
-    <div className="flex items-center justify-center space-y-6 p-6">
-      <button
-        className="btn btn-primary flex items-center"
+    <div>
+      <input
+        type="text"
+        className="input max-w-xs hover:cursor-pointer border-disabled"
         onClick={selectFolder}
-      >
-        <span>Select Folder</span>
+        placeholder={path || "Select Folder..."}
+        readOnly
+      />
+      <button className="btn btn-accent" onClick={cloneFolder} disabled={!path}>
+        <span>Clone/Install</span>
       </button>
-
-      <div className="w-full flex text-center">
-        <p>
-          <strong>Selected Path:</strong>{" "}
-          <span className="ont-mono">{path || "No folder selected yet."}</span>
-        </p>
-        {path && (
-          <button
-            className="btn btn-accent flex items-center space-x-2 px-4 py-2"
-            onClick={cloneFolder}
-          >
-            <span>Clone</span>
-          </button>
-        )}
-      </div>
     </div>
   );
 };
 
-export default CloneLimbus;
+export default UpdateLimbus;

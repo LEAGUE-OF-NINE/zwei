@@ -11,11 +11,13 @@ function App() {
         <img src="./Zwei.png" alt="Zwei: Your Shield" />
         <h1 className="text-2xl">Zwei - Your Shield</h1>
       </div>
-      <UpdateLimbus />
-      <div className="flex gap-2">
-        <StartLethe />
-        <UpdateLetheButton />
-        <ViewLetheFiles />
+      <StartLethe />
+      <div className="form-control items-center gap-2">
+        <div className="flex gap-2">
+          <UpdateLetheButton />
+          <ViewLetheFiles />
+        </div>
+        <UpdateLimbus />
       </div>
     </main>
   );

@@ -17,7 +17,7 @@ const UpdateLimbus = () => {
       try {
         // Call the Tauri command to clone the folder
         await invoke("clone_folder_to_game", { srcPath: path });
-        console.log("Folder cloned successfully to ./game");
+        await invoke("download_and_extract_bepinex");
       } catch (error) {
         console.error("Failed to clone folder:", error);
       }

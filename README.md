@@ -1,7 +1,12 @@
-# Tauri + React + Typescript
+# Zwei - Lethe Launcher
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Zwei is a launcher for the [Lethe](https://lethelc.site) Limbus Company private server.
 
-## Recommended IDE Setup
+## Installation
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+1. Download the installer
+2. Install Zwei
+3. Click on "Update/Install Limbus"
+4. Select your original limbus folder
+5. Zwei will automatically make a clone, and install the relevant mods.
+6. To launch Lethe, click on "Launch"

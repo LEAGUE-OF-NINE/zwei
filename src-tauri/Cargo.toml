@@ -1,8 +1,8 @@
 [package]
-name = "zwei"
+name = "Zwei"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "Your Shield"
+authors = ["Limi"]
 edition = "2021"
 
 [profile.release]
@@ -37,3 +37,4 @@ steamnvke = { git = "https://github.com/LEAGUE-OF-NINE/steamnvke" }
 pelite = {git = "https://github.com/LEAGUE-OF-NINE/pelite" }
 tokio = "1.42.0"
 futures = "0.3.31"
+ini = "1.3.0"

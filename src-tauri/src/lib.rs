@@ -1,4 +1,5 @@
 use futures::stream::StreamExt;
+use ini::configparser::ini::Ini;
 use pelite::FileMap;
 use reqwest::Client;
 use std::fs;
@@ -121,6 +122,7 @@ fn add_distribute_files() -> Result<(), String> {
         source_dir.display(),
         target_dir.display()
     );
+    create_default_steam_config()?;
     Ok(())
 }
 
@@ -151,6 +153,32 @@ fn patch_limbus_exe(exe_path: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to write LimbusCompany file: {}", e))?;
 
     println!("Successfully patched and saved LimbusCompany.exe.");
+    Ok(())
+}
+
+fn create_default_steam_config() -> Result<(), String> {
+    let mut ini = Ini::new();
+
+    // Add a section and set key-value pairs
+    ini.set("SteamClient", "Exe", Some("LimbusCompany.exe".to_owned()));
+    ini.set("SteamClient", "ExeRunDir", Some(".".to_string()));
+    ini.set("SteamClient", "ExeCommandLine", Some("".to_string()));
+    ini.set("SteamClient", "AppId", Some("1973530".to_string()));
+    ini.set(
+        "SteamClient",
+        "SteamClientDll",
+        Some("steamclient.dll".to_string()),
+    );
+    ini.set(
+        "SteamClient",
+        "SteamClient64Dll",
+        Some("steamclient64.dll".to_string()),
+    );
+
+    // Write to a file
+    ini.write("./game/ColdClientLoader.ini")
+        .map_err(|e| format!("Error writing ini file: {}", e))?;
+
     Ok(())
 }
 

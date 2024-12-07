@@ -2,8 +2,9 @@ use futures::stream::StreamExt;
 use ini::configparser::ini::Ini;
 use pelite::FileMap;
 use reqwest::Client;
-use std::fs;
 use std::path::Path;
+use std::process::Command;
+use std::{env, fs};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use zip::read::ZipArchive;
@@ -142,6 +143,25 @@ fn copy_directory_recursively(source: &Path, destination: &Path) -> std::io::Res
     Ok(())
 }
 
+#[tauri::command]
+fn launch_game(token: &str) {
+    let exe_path = "./game/LimbusCompany.exe";
+
+    let mut command = Command::new(exe_path);
+    command.env("LETHE_TOKEN", token);
+
+    match command.spawn() {
+        Ok(mut child) => {
+            if let Err(err) = child.wait() {
+                eprintln!("Failed to wait on process: {}", err);
+            }
+        }
+        Err(err) => {
+            eprintln!("Failed to launch the game: {}", err);
+        }
+    }
+}
+
 fn patch_limbus_exe(exe_path: String) -> Result<(), String> {
     let path = Path::new(&exe_path);
     let map = FileMap::open(path).map_err(|e| format!("Failed to open file: {}", e))?;
@@ -193,7 +213,8 @@ pub fn run() {
             download_and_extract_bepinex,
             download_and_install_lethe,
             patch_limbus,
-            add_distribute_files
+            add_distribute_files,
+            launch_game
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -30,6 +30,7 @@ const UpdateLimbus = () => {
       } catch (error) {
         console.error("Failed to update limbus:", error);
       } finally {
+        setInfo(null);
         setModalOpen(false);
       }
     } else {

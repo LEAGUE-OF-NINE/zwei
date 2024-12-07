@@ -4,10 +4,64 @@ use pelite::FileMap;
 use reqwest::Client;
 use std::path::Path;
 use std::process::Command;
+use std::sync::{Arc, Mutex};
 use std::{env, fs};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use utils::open_browser;
+use warp::Filter;
 use zip::read::ZipArchive;
+mod utils;
+
+#[tauri::command]
+async fn start_login_server(port: u16) -> String {
+    // Create a channel to trigger server shutdown
+    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+
+    // Wrap the Sender in an Arc and Mutex for shared access
+    let shutdown_tx = Arc::new(Mutex::new(Some(shutdown_tx)));
+
+    tokio::spawn(async move {
+        let cors = warp::cors()
+            .allow_any_origin()
+            .allow_methods(vec!["GET", "POST"])
+            .allow_headers(vec!["Content-Type", "Authorization"]);
+
+        // Define a POST route that expects a JSON body with the token
+        let shutdown_route = warp::post()
+            .and(warp::path("auth"))
+            .and(warp::path("login"))
+            .and(warp::body::json())
+            .map({
+                let shutdown_tx = shutdown_tx.clone();
+                move |body: serde_json::Value| {
+                    if let Some(received_token) = body.get("token").and_then(|t| t.as_str()) {
+                        println!("Received token: {}", received_token);
+                        let mut shutdown_tx = shutdown_tx.lock().unwrap();
+                        if let Some(tx) = shutdown_tx.take() {
+                            let _ = tx.send(());
+                        }
+                        launch_game(received_token);
+                        return warp::reply::html("Server shutting down...");
+                    }
+                    warp::reply::html("Invalid token or no token provided.")
+                }
+            });
+
+        open_browser(&format!(
+            "https://api.lethelc.site/auth/login?port={}",
+            port
+        ));
+        // Apply CORS and run the server on localhost:3030
+        warp::serve(shutdown_route.with(cors))
+            .run(([127, 0, 0, 1], port))
+            .await;
+
+        // Wait for shutdown signal and exit
+        shutdown_rx.await.unwrap();
+    });
+    "Server is running! Send a Login request to shut it down.".to_string()
+}
 
 #[tauri::command]
 async fn patch_limbus(src_path: String) -> Result<(), String> {
@@ -143,7 +197,6 @@ fn copy_directory_recursively(source: &Path, destination: &Path) -> std::io::Res
     Ok(())
 }
 
-#[tauri::command]
 fn launch_game(token: &str) {
     let exe_path = "./game/LimbusCompany.exe";
 
@@ -214,7 +267,7 @@ pub fn run() {
             download_and_install_lethe,
             patch_limbus,
             add_distribute_files,
-            launch_game
+            start_login_server
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

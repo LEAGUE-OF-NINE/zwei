@@ -30,7 +30,7 @@ async fn download_and_extract_bepinex() -> Result<(), String> {
 
 #[tauri::command]
 async fn download_and_install_lethe() -> Result<(), String> {
-    let url = "https://lethelc.site/Lethe.dll";
+    let url = "https://api.lethelc.site/Lethe.dll";
     let destination = "game/bepinex/plugins/Lethe.dll";
 
     download_file(url, destination)

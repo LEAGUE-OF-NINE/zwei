@@ -26,4 +26,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 reqwest = { version = "0.12.9", features = ["blocking"] }
 zip = "2.2.1"
-
+steamnvke = { git = "https://github.com/LEAGUE-OF-NINE/steamnvke" }
+pelite = {git = "https://github.com/LEAGUE-OF-NINE/pelite" }
+tokio = "1.42.0"
+futures = "0.3.31"

@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 const UpdateLimbus = () => {
   const [path, setPath] = useState<string | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
 
   async function selectFolder() {
     const file = await open({
@@ -16,12 +17,20 @@ const UpdateLimbus = () => {
   async function updateLimbus() {
     if (path) {
       try {
-        // Call the Tauri command to clone the folder
+        setInfo("Cloning game folder....");
         await invoke("clone_folder_to_game", { srcPath: path });
+        setInfo("Downloading and extracting bepinex....");
         await invoke("download_and_extract_bepinex");
+        setInfo("Downloading and extracting lethe....");
         await invoke("download_and_install_lethe");
+        setInfo("Patching limbus....");
+        await invoke("patch_limbus", { srcPath: path });
+        setInfo("Adding distribute files....");
+        await invoke("add_distribute_files");
       } catch (error) {
         console.error("Failed to update limbus:", error);
+      } finally {
+        setModalOpen(false);
       }
     } else {
       console.error("No folder selected");
@@ -48,6 +57,7 @@ const UpdateLimbus = () => {
               placeholder={path || "Select Limbus Folder..."}
               readOnly
             />
+            {info && <p>{info}</p>}
             <div className="flex justify-end space-x-2">
               <button
                 className="btn btn-secondary"
@@ -59,7 +69,6 @@ const UpdateLimbus = () => {
                 className="btn btn-primary"
                 onClick={() => {
                   updateLimbus();
-                  setModalOpen(false);
                 }}
               >
                 Update Limbus

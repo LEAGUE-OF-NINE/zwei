@@ -7,18 +7,14 @@ on:
       - release
 
 permissions:
-  security-events: write
-  pull-requests: read
   contents: write
   id-token: write
-  statuses: write
-  actions: read
-  pages: write
 
 jobs:
   publish-tauri:
     permissions:
       contents: write
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -34,7 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'yarn' # Set this to npm, yarn or pnpm.
+          cache: 'npm' # Set this to npm, yarn or pnpm.
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -47,7 +43,7 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: install frontend dependencies
-        run: yarn install # change this to npm or pnpm depending on which one you use.
+        run: npm install # change this to npm or pnpm depending on which one you use.
 
       - uses: tauri-apps/tauri-action@v0
         env:

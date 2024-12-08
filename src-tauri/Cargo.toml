@@ -5,11 +5,6 @@ description = "Your Shield"
 authors = ["Limi"]
 edition = "2021"
 
-[profile.release]
-panic = "abort"
-codegen-units = 1 # Compile crates one after another so the compiler can optimize better
-strip = true # Remove debug symbols
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]

@@ -13,7 +13,8 @@ use zip::read::ZipArchive;
 mod utils;
 
 #[tauri::command]
-async fn start_login_server(port: u16) -> String {
+async fn start_login_server(port: u16, launch_args: String) -> String {
+    println!("Recieved args {}", launch_args);
     // Create a channel to trigger server shutdown
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
 
@@ -40,7 +41,7 @@ async fn start_login_server(port: u16) -> String {
                         if let Some(tx) = shutdown_tx.take() {
                             let _ = tx.send(());
                         }
-                        launch_game(received_token);
+                        launch_game(received_token, &launch_args);
                         return warp::reply::html("Server shutting down...");
                     }
                     warp::reply::html("Invalid token or no token provided.")
@@ -199,11 +200,14 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-fn launch_game(token: &str) {
+fn launch_game(token: &str, launch_args: &str) {
     let exe_path = "./game/LimbusCompany.exe";
 
     let mut command = Command::new(exe_path);
     command.env("LETHE_TOKEN", token);
+
+    let args: Vec<&str> = launch_args.split_whitespace().collect();
+    command.args(&args);
 
     match command.spawn() {
         Ok(mut child) => {
@@ -234,6 +238,7 @@ fn patch_limbus_exe(exe_path: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())

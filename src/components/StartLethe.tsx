@@ -1,12 +1,16 @@
 import { invoke } from "@tauri-apps/api/core";
+import { load } from "@tauri-apps/plugin-store";
+
 
 const StartLethe = () => {
   async function startLethe() {
     try {
       const randomNumber = Math.floor(Math.random() * (6000 - 3000 + 1)) + 3000;
-      await invoke("start_login_server", { port: randomNumber });
+      const store = await load('store.json');
+      const launchArgs = await store.get<{ value: string }>('launchArgs');
+      await invoke("start_login_server", { port: randomNumber, launchArgs: launchArgs?.value });
     } catch (error) {
-      console.error("Failed to clone folder:", error);
+      console.error("Failed to Start lethe:", error);
     }
   }
   return (

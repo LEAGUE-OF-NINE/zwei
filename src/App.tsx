@@ -1,4 +1,5 @@
 import "./App.css";
+import SettingsButton from "./components/SettingsButton";
 import StartLethe from "./components/StartLethe";
 import UpdateLetheButton from "./components/UpdateLetheButton";
 import UpdateLimbus from "./components/UpdateLimbus";
@@ -17,7 +18,10 @@ function App() {
         <UpdateLetheButton />
         <ViewLetheFiles />
       </div>
-      <StartLethe />
+      <div className="flex w-full justify-center relative">
+        <StartLethe />
+        <SettingsButton />
+      </div>
     </main>
   );
 }

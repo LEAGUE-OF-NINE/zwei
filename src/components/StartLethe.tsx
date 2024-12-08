@@ -11,7 +11,7 @@ const StartLethe = () => {
   }
   return (
     <button
-      className="btn btn-primary w-full max-w-sm text-xl font-semibold"
+      className="btn btn-primary w-full max-w-sm text-xl font-semibold rounded-tr-none rounded-br-none"
       onClick={startLethe}
     >
       Launch

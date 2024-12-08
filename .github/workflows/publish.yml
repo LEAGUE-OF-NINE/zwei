@@ -6,6 +6,15 @@ on:
     branches:
       - release
 
+permissions:
+  security-events: write
+  pull-requests: read
+  contents: write
+  id-token: write
+  statuses: write
+  actions: read
+  pages: write
+
 jobs:
   publish-tauri:
     permissions:

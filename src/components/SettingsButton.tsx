@@ -5,7 +5,8 @@ import { load } from "@tauri-apps/plugin-store";
 
 const SettingsButton = () => {
   const [isModalOpen, setModalOpen] = useState(false);
-  const [args, setArgs] = useState<string>("");
+  const [launchArgs, setLaunchArgs] = useState<string>("");
+  const [sandbox, setSandbox] = useState<boolean>(false);
 
   useEffect(() => {
     const loadArgs = async () => {
@@ -15,9 +16,13 @@ const SettingsButton = () => {
 
         // Retrieve the launch arguments
         const launchArgs = await store.get<{ value: string }>("launchArgs");
+        const sandbox = await store.get<{ value: boolean }>("sandbox");
 
         if (launchArgs) {
-          setArgs(launchArgs.value); // Update the state with the loaded arguments
+          setLaunchArgs(launchArgs.value); // Update the state with the loaded arguments
+        }
+        if (sandbox) {
+          setSandbox(sandbox.value);
         }
       } catch (error) {
         console.error("Failed to load launch arguments:", error);
@@ -32,7 +37,8 @@ const SettingsButton = () => {
       // Load the store.json file
       const store = await load("store.json");
       // Save the current arguments to the store
-      await store.set("launchArgs", { value: args });
+      await store.set("launchArgs", { value: launchArgs });
+      await store.set("sandbox", { value: sandbox });
       await store.save();
       console.log("Launch arguments saved successfully.");
     } catch (error) {
@@ -67,14 +73,19 @@ const SettingsButton = () => {
             <input
               type="text"
               className="input input-bordered w-full"
-              value={args}
-              onChange={(e) => setArgs(e.target.value)}
+              value={launchArgs}
+              onChange={(e) => setLaunchArgs(e.target.value)}
             />
           </div>
           <div className="form-control w-52">
             <label className="label cursor-pointer">
               <span className="label-text">Enable Sandboxing</span>
-              <input type="checkbox" className="toggle toggle-primary" />
+              <input
+                type="checkbox"
+                className="toggle toggle-primary"
+                checked={sandbox}
+                onChange={() => setSandbox((prev) => !prev)}
+              />
             </label>
           </div>
         </div>

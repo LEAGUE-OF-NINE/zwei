@@ -36,6 +36,11 @@ jobs:
           node-version: lts/*
           cache: 'npm' # Set this to npm, yarn or pnpm.
 
+      - name: Clean npm cache and node_modules
+        run: |
+          rm -rf node_modules
+          npm cache clean --force
+
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:

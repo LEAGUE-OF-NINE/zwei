@@ -34,12 +34,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'npm' # Set this to npm, yarn or pnpm.
-
-      - name: Clean npm cache and node_modules
-        run: |
-          rm -rf node_modules
-          npm cache clean --force
+          cache: 'yarn' # Set this to npm, yarn or pnpm.
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -52,7 +47,7 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: install frontend dependencies
-        run: npm install # change this to npm or pnpm depending on which one you use.
+        run: yarn install # change this to npm or pnpm depending on which one you use.
 
       - uses: tauri-apps/tauri-action@v0
         env:

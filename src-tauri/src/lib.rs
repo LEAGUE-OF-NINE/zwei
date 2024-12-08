@@ -1,5 +1,4 @@
 use futures::stream::StreamExt;
-use ini::configparser::ini::Ini;
 use pelite::FileMap;
 use reqwest::Client;
 use std::path::Path;
@@ -160,43 +159,6 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-#[tauri::command]
-fn add_distribute_files() -> Result<(), String> {
-    let source_dir = Path::new("./distribute");
-    let target_dir = Path::new("./game");
-
-    if !target_dir.exists() {
-        std::fs::create_dir(target_dir)
-            .map_err(|e| format!("Failed to create target directory: {}", e))?;
-    }
-
-    copy_directory_recursively(source_dir, target_dir)
-        .map_err(|err| format!("Failed to copy directory recursively: {}", err))?;
-    println!(
-        "Files copied from {} to {}",
-        source_dir.display(),
-        target_dir.display()
-    );
-    create_default_steam_config()?;
-    Ok(())
-}
-
-fn copy_directory_recursively(source: &Path, destination: &Path) -> std::io::Result<()> {
-    if !destination.exists() {
-        std::fs::create_dir(destination)?;
-    }
-    for entry in std::fs::read_dir(source)? {
-        let entry = entry?;
-        let dest_path = destination.join(entry.file_name());
-        if entry.path().is_dir() {
-            copy_directory_recursively(&entry.path(), &dest_path)?;
-        } else {
-            std::fs::copy(entry.path(), &dest_path)?;
-        }
-    }
-    Ok(())
-}
-
 fn launch_game(token: &str) {
     let exe_path = "./game/LimbusCompany.exe";
 
@@ -229,32 +191,6 @@ fn patch_limbus_exe(exe_path: String) -> Result<(), String> {
     Ok(())
 }
 
-fn create_default_steam_config() -> Result<(), String> {
-    let mut ini = Ini::new();
-
-    // Add a section and set key-value pairs
-    ini.set("SteamClient", "Exe", Some("LimbusCompany.exe".to_owned()));
-    ini.set("SteamClient", "ExeRunDir", Some(".".to_string()));
-    ini.set("SteamClient", "ExeCommandLine", Some("".to_string()));
-    ini.set("SteamClient", "AppId", Some("1973530".to_string()));
-    ini.set(
-        "SteamClient",
-        "SteamClientDll",
-        Some("steamclient.dll".to_string()),
-    );
-    ini.set(
-        "SteamClient",
-        "SteamClient64Dll",
-        Some("steamclient64.dll".to_string()),
-    );
-
-    // Write to a file
-    ini.write("./game/ColdClientLoader.ini")
-        .map_err(|e| format!("Error writing ini file: {}", e))?;
-
-    Ok(())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -266,7 +202,6 @@ pub fn run() {
             download_and_extract_bepinex,
             download_and_install_lethe,
             patch_limbus,
-            add_distribute_files,
             start_login_server
         ])
         .run(tauri::generate_context!())

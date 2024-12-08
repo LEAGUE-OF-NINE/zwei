@@ -25,8 +25,6 @@ const UpdateLimbus = () => {
         await invoke("download_and_install_lethe");
         setInfo("Patching limbus....");
         await invoke("patch_limbus", { srcPath: path });
-        setInfo("Adding distribute files....");
-        await invoke("add_distribute_files");
       } catch (error) {
         console.error("Failed to update limbus:", error);
       } finally {

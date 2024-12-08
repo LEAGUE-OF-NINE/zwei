@@ -36,5 +36,5 @@ pelite = {git = "https://github.com/LEAGUE-OF-NINE/pelite" }
 tokio = "1.42.0"
 futures = "0.3.31"
 ini = "1.3.0"
-warp = {version = "0.3"}
 tauri-plugin-store = "2"
+warp = "0.3.7"

@@ -37,11 +37,20 @@ async fn start_login_server(port: u16, launch_args: String) -> String {
                 move |body: serde_json::Value| {
                     if let Some(received_token) = body.get("token").and_then(|t| t.as_str()) {
                         println!("Received token: {}", received_token);
+
+                        let token = received_token.to_string();
+                        let launch_args = launch_args.clone();
+
+                        // Send the shutdown signal
                         let mut shutdown_tx = shutdown_tx.lock().unwrap();
                         if let Some(tx) = shutdown_tx.take() {
                             let _ = tx.send(());
                         }
-                        launch_game(received_token, &launch_args);
+
+                        tokio::task::spawn_blocking(move || {
+                            launch_game(&token, &launch_args, false);
+                        });
+
                         return warp::reply::html("Server shutting down...");
                     }
                     warp::reply::html("Invalid token or no token provided.")
@@ -200,17 +209,28 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-fn launch_game(token: &str, launch_args: &str) {
-    let exe_path = "./game/LimbusCompany.exe";
+fn launch_game(token: &str, launch_args: &str, use_sandbox: bool) {
+    let game_path = "./game/LimbusCompany.exe";
 
-    let mut command = Command::new(exe_path);
+    let mut command = if use_sandbox {
+        let sandboxie_path = "C:\\Program Files\\Sandboxie\\Start.exe";
+        let mut sandbox_command = Command::new(sandboxie_path);
+        sandbox_command.arg(game_path); // Add the game path as an argument for Sandboxie
+        sandbox_command
+    } else {
+        Command::new(game_path) // Directly launch the game if not using Sandboxie
+    };
+
+    // Set environment variables
     command.env("LETHE_TOKEN", token);
 
+    // Add launch arguments
     let args: Vec<&str> = launch_args.split_whitespace().collect();
     command.args(&args);
 
     match command.spawn() {
         Ok(mut child) => {
+            println!("Game launched with PID: {}", child.id());
             if let Err(err) = child.wait() {
                 eprintln!("Failed to wait on process: {}", err);
             }

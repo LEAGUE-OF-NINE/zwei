@@ -4,10 +4,10 @@ Zwei is a simple and efficient launcher for the [Lethe](https://lethelc.site) pr
 
 ## Key Features
 
+- **Isolated Game Environment**: Creates a clone of *Limbus Company* to prevent conflicts with your main installation.
 - **Automatic Installation**: Installs BepInEx and the Lethe plugin with a single click.
 - **Steam Blocker**: Prevents *Limbus Company* from accessing Steam, ensuring a seamless private server experience.
 - **Easy Updates**: Update Lethe with a single click.
-- **Easy Launching**: Start *Limbus Company* with the Lethe private server configuration directly from the launcher.
 
 ## Installation Guide
 

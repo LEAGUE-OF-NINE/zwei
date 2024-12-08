@@ -13,7 +13,7 @@ use zip::read::ZipArchive;
 mod utils;
 
 #[tauri::command]
-async fn start_login_server(port: u16, launch_args: String) -> String {
+async fn start_login_server(port: u16, launch_args: String, use_sandbox: bool) -> String {
     println!("Recieved args {}", launch_args);
     // Create a channel to trigger server shutdown
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
@@ -48,7 +48,7 @@ async fn start_login_server(port: u16, launch_args: String) -> String {
                         }
 
                         tokio::task::spawn_blocking(move || {
-                            launch_game(&token, &launch_args, false);
+                            launch_game(&token, &launch_args, use_sandbox);
                         });
 
                         return warp::reply::html("Server shutting down...");

@@ -145,6 +145,46 @@ async fn clone_folder_to_game(src_path: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn open_game_folder() -> Result<(), String> {
+    // Get the current working directory
+    let current_dir =
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+
+    // Construct the full path to ./game from the current directory
+    let game_dir = current_dir.join("game");
+
+    // Check if the directory exists
+    if !game_dir.is_dir() {
+        return Err(format!(
+            "The directory '{}' does not exist.",
+            game_dir.display()
+        ));
+    }
+
+    // Use platform-specific commands to open the directory
+    #[cfg(target_os = "windows")]
+    let mut command = std::process::Command::new("explorer");
+    #[cfg(target_os = "windows")]
+    command.arg(game_dir);
+
+    #[cfg(target_os = "macos")]
+    let mut command = std::process::Command::new("open");
+    #[cfg(target_os = "macos")]
+    command.arg(game_dir);
+
+    #[cfg(target_os = "linux")]
+    let mut command = std::process::Command::new("xdg-open");
+    #[cfg(target_os = "linux")]
+    command.arg(game_dir);
+
+    command
+        .spawn()
+        .map_err(|e| format!("Failed to open game directory: {}", e))?;
+
+    Ok(())
+}
+
 fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
     std::fs::create_dir_all(&dst)?;
     for entry in std::fs::read_dir(src)? {
@@ -202,7 +242,8 @@ pub fn run() {
             download_and_extract_bepinex,
             download_and_install_lethe,
             patch_limbus,
-            start_login_server
+            start_login_server,
+            open_game_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

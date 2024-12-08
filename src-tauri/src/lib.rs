@@ -237,6 +237,13 @@ fn patch_limbus_exe(exe_path: String) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .expect("Failed to determine executable directory");
+    std::env::set_current_dir(&exe_dir)
+        .expect("Failed to set current directory to executable's directory");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
@@ -247,8 +254,8 @@ pub fn run() {
             download_and_extract_bepinex,
             download_and_install_lethe,
             patch_limbus,
-            start_login_server,
             open_game_folder,
+            start_login_server
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

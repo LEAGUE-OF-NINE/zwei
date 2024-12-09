@@ -56,20 +56,6 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-      # Step to zip the specific .exe file
-      - name: Zip the executable
-        run: |
-          mkdir -p release
-          zip release/Zwei.zip target/release/Zwei.exe
-
-      - name: Upload zipped file to release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.tauri.outputs.upload_url }}
-          asset_path: release/Zwei.zip
-          asset_name: Zwei.zip
-          asset_content_type: application/zip
-
       - name: Upload unzipped file to release
         uses: actions/upload-release-asset@v1
         with:

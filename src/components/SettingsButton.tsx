@@ -67,6 +67,8 @@ const SettingsButton = () => {
       console.log("Launch arguments saved successfully.");
     } catch (error) {
       console.error("Failed to save launch arguments:", error);
+    } finally {
+      setModalOpen(false);
     }
   };
 

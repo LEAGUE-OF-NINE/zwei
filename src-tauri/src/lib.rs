@@ -3,81 +3,11 @@ use pelite::FileMap;
 use reqwest::Client;
 use std::path::Path;
 use std::process::Command;
-use std::sync::{Arc, Mutex};
 use std::{env, fs};
 use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use utils::open_browser;
-use warp::Filter;
 use zip::read::ZipArchive;
-mod utils;
-
-#[tauri::command]
-async fn start_login_server(
-    port: u16,
-    launch_args: String,
-    use_sandbox: bool,
-    sandbox_path: String,
-) -> String {
-    println!("Recieved args {}", launch_args);
-    // Create a channel to trigger server shutdown
-    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
-
-    // Wrap the Sender in an Arc and Mutex for shared access
-    let shutdown_tx = Arc::new(Mutex::new(Some(shutdown_tx)));
-
-    tokio::spawn(async move {
-        let cors = warp::cors()
-            .allow_any_origin()
-            .allow_methods(vec!["GET", "POST"])
-            .allow_headers(vec!["Content-Type", "Authorization"]);
-
-        // Define a POST route that expects a JSON body with the token
-        let shutdown_route = warp::post()
-            .and(warp::path("auth"))
-            .and(warp::path("login"))
-            .and(warp::body::json())
-            .map({
-                let shutdown_tx = shutdown_tx.clone();
-                move |body: serde_json::Value| {
-                    if let Some(received_token) = body.get("token").and_then(|t| t.as_str()) {
-                        println!("Received token: {}", received_token);
-
-                        let token = received_token.to_string();
-                        let launch_args = launch_args.clone();
-                        let sandbox_path = sandbox_path.clone();
-
-                        // Send the shutdown signal
-                        let mut shutdown_tx = shutdown_tx.lock().unwrap();
-                        if let Some(tx) = shutdown_tx.take() {
-                            let _ = tx.send(());
-                        }
-
-                        tokio::task::spawn_blocking(move || {
-                            launch_game(&token, &launch_args, use_sandbox, &sandbox_path);
-                        });
-
-                        return warp::reply::html("Server shutting down...");
-                    }
-                    warp::reply::html("Invalid token or no token provided.")
-                }
-            });
-
-        open_browser(&format!(
-            "https://api.lethelc.site/auth/login?port={}",
-            port
-        ));
-        // Apply CORS and run the server on localhost:3030
-        warp::serve(shutdown_route.with(cors))
-            .run(([127, 0, 0, 1], port))
-            .await;
-
-        // Wait for shutdown signal and exit
-        shutdown_rx.await.unwrap();
-    });
-    "Server is running! Send a Login request to shut it down.".to_string()
-}
 
 #[tauri::command]
 async fn patch_limbus(src_path: String) -> Result<(), String> {
@@ -216,7 +146,8 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-fn launch_game(token: &str, launch_args: &str, use_sandbox: bool, sandbox_path: &str) {
+#[tauri::command]
+fn launch_game(launch_args: &str, use_sandbox: bool, sandbox_path: &str) {
     let game_dir = "./game";
     let game_path = format!("{}/LimbusCompany.exe", game_dir);
 
@@ -230,9 +161,6 @@ fn launch_game(token: &str, launch_args: &str, use_sandbox: bool, sandbox_path: 
 
     // Set the working directory
     command.current_dir(game_dir);
-
-    // Set environment variables
-    command.env("LETHE_TOKEN", token);
 
     let args: Vec<&str> = launch_args.split_whitespace().collect();
     command.args(&args);
@@ -284,7 +212,7 @@ pub fn run() {
             download_and_install_lethe,
             patch_limbus,
             open_game_folder,
-            start_login_server
+            launch_game
         ])
         .setup(|app| {
             // Create a new store or load the existing one

@@ -6,13 +6,11 @@ const StartLethe = () => {
   const handleError = useErrorHandler();
   async function startLethe() {
     try {
-      const randomNumber = Math.floor(Math.random() * (6000 - 3000 + 1)) + 3000;
       const store = await load("store.json");
       const launchArgs = await store.get<{ value: string }>("launchArgs");
       const sandbox = await store.get<{ value: boolean }>("sandbox");
       const sandboxPath = await store.get<{ value: string }>("sandboxPath");
-      await invoke("start_login_server", {
-        port: randomNumber,
+      await invoke("launch_game", {
         launchArgs: launchArgs?.value,
         useSandbox: sandbox?.value,
         sandboxPath: sandboxPath?.value,

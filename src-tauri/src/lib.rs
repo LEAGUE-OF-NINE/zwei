@@ -5,6 +5,7 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::{env, fs};
+use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use utils::open_browser;
@@ -13,7 +14,12 @@ use zip::read::ZipArchive;
 mod utils;
 
 #[tauri::command]
-async fn start_login_server(port: u16, launch_args: String, use_sandbox: bool) -> String {
+async fn start_login_server(
+    port: u16,
+    launch_args: String,
+    use_sandbox: bool,
+    sandbox_path: String,
+) -> String {
     println!("Recieved args {}", launch_args);
     // Create a channel to trigger server shutdown
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
@@ -40,6 +46,7 @@ async fn start_login_server(port: u16, launch_args: String, use_sandbox: bool) -
 
                         let token = received_token.to_string();
                         let launch_args = launch_args.clone();
+                        let sandbox_path = sandbox_path.clone();
 
                         // Send the shutdown signal
                         let mut shutdown_tx = shutdown_tx.lock().unwrap();
@@ -48,7 +55,7 @@ async fn start_login_server(port: u16, launch_args: String, use_sandbox: bool) -
                         }
 
                         tokio::task::spawn_blocking(move || {
-                            launch_game(&token, &launch_args, use_sandbox);
+                            launch_game(&token, &launch_args, use_sandbox, &sandbox_path);
                         });
 
                         return warp::reply::html("Server shutting down...");
@@ -209,14 +216,13 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-fn launch_game(token: &str, launch_args: &str, use_sandbox: bool) {
+fn launch_game(token: &str, launch_args: &str, use_sandbox: bool, sandbox_path: &str) {
     let game_dir = "./game";
-    let game_path = format!("{}/steamclient_loader.exe", game_dir);
+    let game_path = format!("{}/LimbusCompany.exe", game_dir);
 
     let mut command = if use_sandbox {
-        let sandboxie_path = "C:\\Program Files\\Sandboxie\\Start.exe";
-        let mut sandbox_command = Command::new(sandboxie_path);
-        sandbox_command.arg("./steamclient_loader.exe");
+        let mut sandbox_command = Command::new(sandbox_path);
+        sandbox_command.arg("./LimbusCompany.exe");
         sandbox_command
     } else {
         Command::new(&game_path)
@@ -280,6 +286,14 @@ pub fn run() {
             open_game_folder,
             start_login_server
         ])
+        .setup(|app| {
+            // Create a new store or load the existing one
+            // this also put the store in the app's resource table
+            // so your following calls `store` calls (from both rust and js)
+            // will reuse the same store
+            app.store("store.json")?;
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

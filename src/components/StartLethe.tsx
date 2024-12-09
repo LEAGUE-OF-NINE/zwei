@@ -8,10 +8,12 @@ const StartLethe = () => {
       const store = await load("store.json");
       const launchArgs = await store.get<{ value: string }>("launchArgs");
       const sandbox = await store.get<{ value: boolean }>("sandbox");
+      const sandboxPath = await store.get<{ value: string }>("sandboxPath");
       await invoke("start_login_server", {
         port: randomNumber,
         launchArgs: launchArgs?.value,
         useSandbox: sandbox?.value,
+        sandboxPath: sandboxPath?.value
       });
     } catch (error) {
       console.error("Failed to Start lethe:", error);

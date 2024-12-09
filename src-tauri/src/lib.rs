@@ -32,11 +32,13 @@ async fn download_and_extract_bepinex() -> Result<(), String> {
 #[tauri::command]
 async fn download_and_install_lethe() -> Result<(), String> {
     let url = "https://api.lethelc.site/Lethe.dll";
-    let destination = "game/bepinex/plugins/Lethe.dll";
-    std::fs::create_dir_all(destination)
+    let directory = "game/bepinex/plugins";
+    let destination = format!("{}/Lethe.dll", directory);
+
+    std::fs::create_dir_all(directory)
         .map_err(|err| format!("Failed to create dirs recursively: {}", err))?;
 
-    download_file(url, destination)
+    download_file(url, &destination)
         .await
         .map_err(|e| format!("Failed to download the file: {}", e))?;
 

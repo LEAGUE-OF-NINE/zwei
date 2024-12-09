@@ -151,7 +151,7 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
 }
 
 #[tauri::command]
-fn launch_game(launch_args: &str, use_sandbox: bool, sandbox_path: &str) {
+async fn launch_game(launch_args: String, use_sandbox: bool, sandbox_path: String) {
     let game_dir = "./game";
     let game_path = format!("{}/LimbusCompany.exe", game_dir);
 

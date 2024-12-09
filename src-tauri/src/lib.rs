@@ -210,21 +210,24 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
 }
 
 fn launch_game(token: &str, launch_args: &str, use_sandbox: bool) {
-    let game_path = "./game/LimbusCompany.exe";
+    let game_dir = "./game";
+    let game_path = format!("{}/steamclient_loader.exe", game_dir);
 
     let mut command = if use_sandbox {
         let sandboxie_path = "C:\\Program Files\\Sandboxie\\Start.exe";
         let mut sandbox_command = Command::new(sandboxie_path);
-        sandbox_command.arg(game_path); // Add the game path as an argument for Sandboxie
+        sandbox_command.arg("./steamclient_loader.exe");
         sandbox_command
     } else {
-        Command::new(game_path) // Directly launch the game if not using Sandboxie
+        Command::new(&game_path)
     };
+
+    // Set the working directory
+    command.current_dir(game_dir);
 
     // Set environment variables
     command.env("LETHE_TOKEN", token);
 
-    // Add launch arguments
     let args: Vec<&str> = launch_args.split_whitespace().collect();
     command.args(&args);
 

@@ -2,12 +2,14 @@ import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import Modal from "./Modal";
+import { useErrorHandler } from "../context/useErrorHandler";
 
 const UpdateLimbus = () => {
   const [path, setPath] = useState<string | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
-
+  const handleError = useErrorHandler();
+  
   async function selectFolder() {
     const file = await open({
       multiple: false,
@@ -29,6 +31,7 @@ const UpdateLimbus = () => {
         await invoke("patch_limbus", { srcPath: path });
       } catch (error) {
         console.error("Failed to update limbus:", error);
+        handleError(error);
       } finally {
         setInfo(null);
         setModalOpen(false);
@@ -53,7 +56,11 @@ const UpdateLimbus = () => {
         onClose={() => setModalOpen(false)}
         actions={
           <>
-            <button className="btn btn-primary" onClick={updateLimbus} disabled={info != null}>
+            <button
+              className="btn btn-primary"
+              onClick={updateLimbus}
+              disabled={info != null}
+            >
               Update Limbus
             </button>
           </>

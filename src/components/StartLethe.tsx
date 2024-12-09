@@ -1,7 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { load } from "@tauri-apps/plugin-store";
+import { useErrorHandler } from "../context/useErrorHandler";
 
 const StartLethe = () => {
+  const handleError = useErrorHandler();
   async function startLethe() {
     try {
       const randomNumber = Math.floor(Math.random() * (6000 - 3000 + 1)) + 3000;
@@ -13,10 +15,11 @@ const StartLethe = () => {
         port: randomNumber,
         launchArgs: launchArgs?.value,
         useSandbox: sandbox?.value,
-        sandboxPath: sandboxPath?.value
+        sandboxPath: sandboxPath?.value,
       });
     } catch (error) {
       console.error("Failed to Start lethe:", error);
+      handleError(error);
     }
   }
   return (

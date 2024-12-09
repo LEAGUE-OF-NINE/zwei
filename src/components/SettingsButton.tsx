@@ -3,12 +3,14 @@ import { IoMdSettings } from "react-icons/io";
 import Modal from "./Modal";
 import { load } from "@tauri-apps/plugin-store";
 import { open } from "@tauri-apps/plugin-dialog";
+import { useErrorHandler } from "../context/useErrorHandler";
 
 const SettingsButton = () => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [launchArgs, setLaunchArgs] = useState<string>("");
   const [sandbox, setSandbox] = useState<boolean>(false);
   const [sandboxPath, setSandboxPath] = useState<string | null>("");
+  const handleError = useErrorHandler();
 
   async function selectFile() {
     const file = await open({
@@ -39,7 +41,7 @@ const SettingsButton = () => {
         }
 
         if (launchArgs) {
-          setLaunchArgs(launchArgs.value); // Update the state with the loaded arguments
+          setLaunchArgs(launchArgs.value);
         }
         if (sandbox) {
           setSandbox(sandbox.value);
@@ -49,6 +51,7 @@ const SettingsButton = () => {
         }
       } catch (error) {
         console.error("Failed to load launch arguments:", error);
+        handleError(error);
       }
     };
 
@@ -66,6 +69,7 @@ const SettingsButton = () => {
       await store.save();
       console.log("Launch arguments saved successfully.");
     } catch (error) {
+      handleError(error);
       console.error("Failed to save launch arguments:", error);
     } finally {
       setModalOpen(false);

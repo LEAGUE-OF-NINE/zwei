@@ -1,9 +1,11 @@
 use futures::stream::StreamExt;
 use pelite::FileMap;
 use reqwest::Client;
+use serde_json::Value;
 use std::path::Path;
 use std::process::Command;
 use std::{env, fs};
+use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -150,8 +152,7 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-#[tauri::command]
-async fn launch_game(launch_args: String, use_sandbox: bool, sandbox_path: String) {
+fn launch_game(launch_args: String, use_sandbox: bool, sandbox_path: String, token: String) {
     let game_dir = "./game";
     let game_path = format!("{}/LimbusCompany.exe", game_dir);
 
@@ -165,6 +166,8 @@ async fn launch_game(launch_args: String, use_sandbox: bool, sandbox_path: Strin
 
     // Set the working directory
     command.current_dir(game_dir);
+
+    command.env("LETHE_TOKEN", &token);
 
     let args: Vec<&str> = launch_args.split_whitespace().collect();
     command.args(&args);
@@ -205,7 +208,16 @@ pub fn run() {
     std::env::set_current_dir(&exe_dir)
         .expect("Failed to set current directory to executable's directory");
 
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
+          println!("a new app instance was opened with {argv:?} and the deep link event was already triggered");
+        }));
+    }
+
+    builder
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -216,14 +228,34 @@ pub fn run() {
             download_and_install_lethe,
             patch_limbus,
             open_game_folder,
-            launch_game
         ])
         .setup(|app| {
             // Create a new store or load the existing one
             // this also put the store in the app's resource table
             // so your following calls `store` calls (from both rust and js)
             // will reuse the same store
-            app.store("store.json")?;
+            let store = app.store("store.json")?;
+
+            #[cfg(any(windows, target_os = "linux"))]
+            {
+                app.deep_link().register_all()?;
+            }
+
+            app.deep_link().on_open_url(move |event| {
+                let launch_args: String = store.get("launchArgs").unwrap_or("".into()).to_string();
+                let use_sandbox: bool = store
+                    .get("sandbox")
+                    .unwrap_or(Value::Bool(false))
+                    .as_bool()
+                    .unwrap_or(false);
+                let sandbox_path: String =
+                    store.get("sandboxPath").unwrap_or("".into()).to_string();
+
+                if let Some(token) = event.urls().clone().first().unwrap().query() {
+                    launch_game(launch_args, use_sandbox, sandbox_path, token.to_string());
+                }
+            });
+
             Ok(())
         })
         .run(tauri::generate_context!())

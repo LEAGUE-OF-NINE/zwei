@@ -1,20 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
-import { load } from "@tauri-apps/plugin-store";
 import { useErrorHandler } from "../context/useErrorHandler";
+import { open } from "@tauri-apps/plugin-shell";
 
 const StartLethe = () => {
   const handleError = useErrorHandler();
   async function startLethe() {
     try {
-      const store = await load("store.json");
-      const launchArgs = await store.get<{ value: string }>("launchArgs");
-      const sandbox = await store.get<{ value: boolean }>("sandbox");
-      const sandboxPath = await store.get<{ value: string }>("sandboxPath");
-      await invoke("launch_game", {
-        launchArgs: launchArgs?.value,
-        useSandbox: sandbox?.value,
-        sandboxPath: sandboxPath?.value,
-      });
+      await open("https://lethelc.site/");
     } catch (error) {
       console.error("Failed to Start lethe:", error);
       handleError(error);

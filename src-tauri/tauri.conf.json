@@ -34,5 +34,12 @@
     "windows": {
       "wix": { "template": "./windows/templates/main.wxs" }
     }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["zwei"]
+      }
+    }
   }
 }

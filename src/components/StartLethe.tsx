@@ -5,7 +5,7 @@ const StartLethe = () => {
   const handleError = useErrorHandler();
   async function startLethe() {
     try {
-      await open("https://lethelc.site/");
+      await open("https://lethelc.site/zwei");
     } catch (error) {
       console.error("Failed to Start lethe:", error);
       handleError(error);

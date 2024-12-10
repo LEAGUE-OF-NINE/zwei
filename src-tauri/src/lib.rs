@@ -1,7 +1,6 @@
 use futures::stream::StreamExt;
 use pelite::FileMap;
 use reqwest::Client;
-use serde_json::Value;
 use std::path::Path;
 use std::{env, fs};
 use tauri::AppHandle;
@@ -11,7 +10,9 @@ use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::task;
+use utils::extract_value;
 use zip::read::ZipArchive;
+mod utils;
 
 #[tauri::command]
 async fn patch_limbus(src_path: String) -> Result<(), String> {
@@ -96,7 +97,14 @@ async fn clone_folder_to_game(src_path: String) -> Result<(), String> {
     let src = Path::new(&src_path);
     let dest = Path::new("./game");
 
+    let limbus_path = src.join("LimbusCompany.exe");
+
+    if !limbus_path.exists() {
+        return Err("LimbusCompany.exe not found in the source directory.".to_string());
+    }
+
     copy_dir_all(src, dest).map_err(|e| format!("Failed to clone folder: {}", e))?;
+
     Ok(())
 }
 
@@ -166,20 +174,27 @@ async fn launch_game(
     println!("RECIEVED SANDBOX PATH: {}", sandbox_path);
     println!("RECIEVED SANDBOX BOOL: {}", use_sandbox);
 
-    let (command, args) = if use_sandbox {
-        (
-            sandbox_path.clone(),
-            vec!["./LimbusCompany.exe".to_string()],
-        )
+    let mut args = Vec::new();
+    let command = if use_sandbox {
+        // Add LimbusCompany.exe after sandbox command
+        args.push("LimbusCompany.exe".to_string());
+        sandbox_path.clone()
     } else {
-        (game_path.clone(), Vec::new())
+        // No sandbox: just the game path
+        game_path.clone()
     };
 
-    let full_args: Vec<String> = launch_args
+    // Create full_args with LimbusCompany.exe at the beginning
+    let mut full_args: Vec<String> = launch_args
         .split_whitespace()
         .map(|s| s.to_string())
-        .chain(args.into_iter())
         .collect();
+
+    // Prepend LimbusCompany.exe at the beginning of full_args
+    full_args.insert(0, args[0].clone());
+
+    // Print the command and arguments being executed for debugging
+    println!("Executing command: {} {}", command, full_args.join(" "));
 
     let shell = app.shell();
     match shell
@@ -246,6 +261,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_deep_link::init())
         .invoke_handler(tauri::generate_handler![
             download_and_extract_bepinex,
             download_and_install_lethe,
@@ -261,7 +277,6 @@ pub fn run() {
             let store = app.store("store.json")?;
 
             let app_handle = app.handle().clone();
-
             #[cfg(any(windows, target_os = "linux"))]
             {
                 app.deep_link().register_all()?;
@@ -269,23 +284,9 @@ pub fn run() {
 
             app.deep_link().on_open_url(move |event| {
                 let handle_clone = app_handle.clone();
-                let launch_args: String = store.get("launchArgs").unwrap_or("".into()).to_string();
-                let use_sandbox: bool = match store.get("sandbox") {
-                    Some(Value::Object(map)) => match map.get("value") {
-                        Some(Value::Bool(b)) => *b,
-                        _ => {
-                            println!("Sandbox value key exists, but not a bool. Falling back to false.");
-                            false
-                        }
-                    },
-                    _ => {
-                        println!("Sandbox key not found or not an object. Falling back to false.");
-                        false
-                    }
-                };
-
-                let sandbox_path: String =
-                    store.get("sandboxPath").unwrap_or("".into()).to_string();
+                let launch_args: String = extract_value(&store, "launchArgs", "".to_string());
+                let use_sandbox: bool = extract_value(&store, "sandbox", false);
+                let sandbox_path: String = extract_value(&store, "sandboxPath", "".to_string());
 
                 let urls = event.urls();
                 let owned_urls: Vec<_> = urls.into_iter().collect(); // Due to rust ownership system we must fully own every url here

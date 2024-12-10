@@ -9,6 +9,7 @@ use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use tokio::task;
 use zip::read::ZipArchive;
 
 #[tauri::command]
@@ -152,7 +153,7 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-fn launch_game(launch_args: String, use_sandbox: bool, sandbox_path: String, token: String) {
+async fn launch_game(launch_args: String, use_sandbox: bool, sandbox_path: String, token: String) {
     let game_dir = "./game";
     let game_path = format!("{}/LimbusCompany.exe", game_dir);
 
@@ -251,8 +252,26 @@ pub fn run() {
                 let sandbox_path: String =
                     store.get("sandboxPath").unwrap_or("".into()).to_string();
 
-                if let Some(token) = event.urls().clone().first().unwrap().query() {
-                    launch_game(launch_args, use_sandbox, sandbox_path, token.to_string());
+                let urls = event.urls();
+                let owned_urls: Vec<_> = urls.into_iter().collect(); // Due to rust ownership system we must fully own every url here
+
+                if let Some(first_url) = owned_urls.first() {
+                    if let Some(token) = first_url.query() {
+                        let launch_args_clone = launch_args.clone();
+                        let sandbox_path_clone = sandbox_path.clone();
+                        let token_clone = token.to_string(); // Another owned string conversion here
+
+                        // Delegate launch game to tokio to prevent blocking the main thread
+                        task::spawn(async move {
+                            launch_game(
+                                launch_args_clone,
+                                use_sandbox,
+                                sandbox_path_clone,
+                                token_clone,
+                            )
+                            .await;
+                        });
+                    }
                 }
             });
 

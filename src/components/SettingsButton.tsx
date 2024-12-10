@@ -26,31 +26,26 @@ const SettingsButton = () => {
         // Load the store.json file
         const store = await load("store.json");
 
-        // Retrieve the launch arguments
-        let launchArgs = await store.get<{ value: string }>("launchArgs");
-        if (launchArgs === undefined) {
-          launchArgs = { value: "" };
-        }
-        let sandbox = await store.get<{ value: boolean }>("sandbox");
-        if (sandbox === undefined) {
-          sandbox = { value: false };
-        }
-        let sandboxPath = await store.get<{ value: string }>("sandboxPath");
-        if (sandboxPath === undefined) {
-          sandboxPath = { value: "C:\\Program Files\\Sandboxie\\Start.exe" };
-        }
+        // Retrieve launch arguments
+        const launchArgsData = await store.get<{ value: string }>("launchArgs");
+        const sandboxData = await store.get<{ value: boolean }>("sandbox");
+        const sandboxPathData = await store.get<{ value: string }>(
+          "sandboxPath"
+        );
 
-        if (launchArgs) {
-          setLaunchArgs(launchArgs.value);
-        }
-        if (sandbox) {
-          setSandbox(sandbox.value);
-        }
-        if (sandboxPath) {
-          setSandboxPath(sandboxPath.value);
-        }
+        // Log retrieved values for debugging
+        console.log("Launch Args:", launchArgsData);
+        console.log("Sandbox:", sandboxData);
+        console.log("Sandbox Path:", sandboxPathData);
+
+        // Set state with fallback values
+        setLaunchArgs(launchArgsData?.value ?? "");
+        setSandbox(sandboxData?.value ?? false);
+        setSandboxPath(
+          sandboxPathData?.value ?? ""
+        );
       } catch (error) {
-        console.error("Failed to load launch arguments:", error);
+        console.error("Failed to load settings:", error);
         handleError(error);
       }
     };

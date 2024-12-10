@@ -191,7 +191,9 @@ async fn launch_game(
         .collect();
 
     // Prepend LimbusCompany.exe at the beginning of full_args
-    full_args.insert(0, args[0].clone());
+    if !args.is_empty() {
+        full_args.insert(0, args[0].clone());
+    }
 
     // Print the command and arguments being executed for debugging
     println!("Executing command: {} {}", command, full_args.join(" "));

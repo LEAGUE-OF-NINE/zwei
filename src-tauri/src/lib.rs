@@ -3,9 +3,10 @@ use pelite::FileMap;
 use reqwest::Client;
 use serde_json::Value;
 use std::path::Path;
-use std::process::Command;
 use std::{env, fs};
+use tauri::AppHandle;
 use tauri_plugin_deep_link::DeepLinkExt;
+use tauri_plugin_shell::ShellExt;
 use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -153,31 +154,54 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-async fn launch_game(launch_args: String, use_sandbox: bool, sandbox_path: String, token: String) {
+async fn launch_game(
+    app: AppHandle,
+    launch_args: String,
+    use_sandbox: bool,
+    sandbox_path: String,
+    token: String,
+) {
     let game_dir = "./game";
     let game_path = format!("{}/LimbusCompany.exe", game_dir);
+    println!("RECIEVED SANDBOX PATH: {}", sandbox_path);
+    println!("RECIEVED SANDBOX BOOL: {}", use_sandbox);
 
-    let mut command = if use_sandbox {
-        let mut sandbox_command = Command::new(sandbox_path);
-        sandbox_command.arg("./LimbusCompany.exe");
-        sandbox_command
+    let (command, args) = if use_sandbox {
+        (
+            sandbox_path.clone(),
+            vec!["./LimbusCompany.exe".to_string()],
+        )
     } else {
-        Command::new(&game_path)
+        (game_path.clone(), Vec::new())
     };
 
-    // Set the working directory
-    command.current_dir(game_dir);
+    let full_args: Vec<String> = launch_args
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .chain(args.into_iter())
+        .collect();
 
-    command.env("LETHE_TOKEN", &token);
-
-    let args: Vec<&str> = launch_args.split_whitespace().collect();
-    command.args(&args);
-
-    match command.spawn() {
-        Ok(mut child) => {
-            println!("Game launched with PID: {}", child.id());
-            if let Err(err) = child.wait() {
-                eprintln!("Failed to wait on process: {}", err);
+    let shell = app.shell();
+    match shell
+        .command(&command)
+        .current_dir(game_dir)
+        .env("LETHE_TOKEN", token.clone())
+        .args(full_args)
+        .output()
+        .await
+    {
+        Ok(output) => {
+            if output.status.success() {
+                println!(
+                    "Game launched successfully: {:?}",
+                    String::from_utf8(output.stdout)
+                );
+            } else {
+                eprintln!(
+                    "Game exited with code: {:?}, stderr: {:?}",
+                    output.status.code(),
+                    String::from_utf8(output.stderr)
+                );
             }
         }
         Err(err) => {
@@ -218,17 +242,16 @@ pub fn run() {
     }
 
     builder
-        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
-            clone_folder_to_game,
             download_and_extract_bepinex,
             download_and_install_lethe,
             patch_limbus,
             open_game_folder,
+            clone_folder_to_game,
         ])
         .setup(|app| {
             // Create a new store or load the existing one
@@ -237,18 +260,30 @@ pub fn run() {
             // will reuse the same store
             let store = app.store("store.json")?;
 
+            let app_handle = app.handle().clone();
+
             #[cfg(any(windows, target_os = "linux"))]
             {
                 app.deep_link().register_all()?;
             }
 
             app.deep_link().on_open_url(move |event| {
+                let handle_clone = app_handle.clone();
                 let launch_args: String = store.get("launchArgs").unwrap_or("".into()).to_string();
-                let use_sandbox: bool = store
-                    .get("sandbox")
-                    .unwrap_or(Value::Bool(false))
-                    .as_bool()
-                    .unwrap_or(false);
+                let use_sandbox: bool = match store.get("sandbox") {
+                    Some(Value::Object(map)) => match map.get("value") {
+                        Some(Value::Bool(b)) => *b,
+                        _ => {
+                            println!("Sandbox value key exists, but not a bool. Falling back to false.");
+                            false
+                        }
+                    },
+                    _ => {
+                        println!("Sandbox key not found or not an object. Falling back to false.");
+                        false
+                    }
+                };
+
                 let sandbox_path: String =
                     store.get("sandboxPath").unwrap_or("".into()).to_string();
 
@@ -260,10 +295,12 @@ pub fn run() {
                         let launch_args_clone = launch_args.clone();
                         let sandbox_path_clone = sandbox_path.clone();
                         let token_clone = token.to_string(); // Another owned string conversion here
+                        let handle_clone = handle_clone.clone(); // Clone the handle again for the async block
 
                         // Delegate launch game to tokio to prevent blocking the main thread
                         task::spawn(async move {
                             launch_game(
+                                handle_clone,
                                 launch_args_clone,
                                 use_sandbox,
                                 sandbox_path_clone,

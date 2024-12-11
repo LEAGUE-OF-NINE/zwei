@@ -10,9 +10,18 @@ use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::task;
+use windows_registry::CURRENT_USER;
 use utils::extract_value;
 use zip::read::ZipArchive;
 mod utils;
+
+#[tauri::command]
+async fn steam_limbus_location() -> String {
+    CURRENT_USER.create("Software\\Valve\\Steam")
+        .and_then(|key| key.get_string("SteamPath"))
+        .map(|path| Path::new(&path).join("steamapps/common/Limbus Company/").to_string_lossy().to_string())
+        .unwrap_or_default()
+}
 
 #[tauri::command]
 async fn patch_limbus(src_path: String) -> Result<(), String> {
@@ -98,9 +107,14 @@ async fn clone_folder_to_game(src_path: String) -> Result<(), String> {
     let dest = Path::new("./game");
 
     let limbus_path = src.join("LimbusCompany.exe");
+    let limbus_data_path = src.join("LimbusCompany_data");
 
-    if !limbus_path.exists() {
+    if !limbus_path.exists() || !limbus_path.is_file() {
         return Err("LimbusCompany.exe not found in the source directory.".to_string());
+    }
+
+    if !limbus_data_path.exists() || !limbus_data_path.is_dir() {
+        return Err("LimbusCompany_Data not found in the source directory.".to_string());
     }
 
     copy_dir_all(src, dest).map_err(|e| format!("Failed to clone folder: {}", e))?;
@@ -281,6 +295,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_deep_link::init())
         .invoke_handler(tauri::generate_handler![
+            steam_limbus_location,
             download_and_extract_bepinex,
             download_and_install_lethe,
             patch_limbus,

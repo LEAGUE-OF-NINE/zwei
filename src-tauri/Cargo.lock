@@ -22,6 +22,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-store",
  "tokio",
+ "windows-registry 0.3.0",
  "zip",
 ]
 

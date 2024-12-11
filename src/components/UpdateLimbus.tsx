@@ -11,9 +11,11 @@ const UpdateLimbus = () => {
   const handleError = useErrorHandler();
   
   async function selectFolder() {
+    const response = await invoke<string>('steam_limbus_location');
     const file = await open({
       multiple: false,
       directory: true,
+      defaultPath: response == "" ? undefined : response,
     });
     setPath(file);
   }

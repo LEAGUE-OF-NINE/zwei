@@ -3,23 +3,30 @@ use pelite::FileMap;
 use reqwest::Client;
 use std::path::Path;
 use std::{env, fs};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_deep_link::DeepLinkExt;
+use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::task;
-use windows_registry::CURRENT_USER;
 use utils::extract_value;
+use windows_registry::CURRENT_USER;
 use zip::read::ZipArchive;
 mod utils;
 
 #[tauri::command]
 async fn steam_limbus_location() -> String {
-    CURRENT_USER.create("Software\\Valve\\Steam")
+    CURRENT_USER
+        .create("Software\\Valve\\Steam")
         .and_then(|key| key.get_string("SteamPath"))
-        .map(|path| Path::new(&path).join("steamapps/common/Limbus Company/").to_string_lossy().to_string())
+        .map(|path| {
+            Path::new(&path)
+                .join("steamapps/common/Limbus Company/")
+                .to_string_lossy()
+                .to_string()
+        })
         .unwrap_or_default()
 }
 
@@ -187,6 +194,7 @@ async fn launch_game(
     let game_path = format!("{}/LimbusCompany.exe", game_dir);
     log::info!("RECEIVED SANDBOX PATH: {}", sandbox_path);
     log::info!("RECEIVED SANDBOX BOOL: {}", use_sandbox);
+    app.emit("launch-status", "Launching...").unwrap();
 
     // Prepare command and arguments
     let cmd = if launch_args.is_empty() {
@@ -226,24 +234,42 @@ async fn launch_game(
         .current_dir(game_dir)
         .env("LETHE_TOKEN", token.clone())
         .args(full_args)
-        .output()
-        .await
+        .spawn()
     {
-        Ok(output) => {
-            if output.status.success() {
-                log::info!(
-                    "Game launched successfully: {:?}",
-                    String::from_utf8(output.stdout)
-                );
-            } else {
-                log::error!(
-                    "Game exited with code: {:?}, stderr: {:?}",
-                    output.status.code(),
-                    String::from_utf8(output.stderr)
-                );
-            }
+        Ok((mut rx, _child)) => {
+            // Emit event immediately upon spawning the process
+            app.emit("launch-status", "Game launched successfully!")
+                .unwrap();
+            log::info!("Game process started successfully.");
+
+            // Listen for command events (stdout, stderr, etc.)
+            let app_handle = app.clone();
+            tauri::async_runtime::spawn(async move {
+                while let Some(event) = rx.recv().await {
+                    match event {
+                        CommandEvent::Stdout(line) => {
+                            let output = String::from_utf8_lossy(&line);
+                            log::info!("Game output: {}", output);
+                            app_handle.emit("game-stdout", output.to_string()).unwrap();
+                        }
+                        CommandEvent::Stderr(line) => {
+                            let error = String::from_utf8_lossy(&line);
+                            log::error!("Game error: {}", error);
+                            app_handle.emit("game-stderr", error.to_string()).unwrap();
+                        }
+                        _ => {
+                            app_handle.emit("launch-status", "").unwrap();
+                        }
+                    }
+                }
+            });
         }
         Err(err) => {
+            app.emit(
+                "launch-status",
+                format!("Failed to launch the game: {}", err),
+            )
+            .unwrap();
             log::error!("Failed to launch the game: {}", err);
         }
     }

@@ -181,17 +181,9 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
     Ok(())
 }
 
-async fn launch_game(
-    app: AppHandle,
-    launch_args: String,
-    use_sandbox: bool,
-    sandbox_path: String,
-    token: String,
-) {
+async fn launch_game(app: AppHandle, launch_args: String, token: String) {
     let game_dir = "./game";
     let game_path = format!("{}/LimbusCompany.exe", game_dir);
-    log::info!("RECEIVED SANDBOX PATH: {}", sandbox_path);
-    log::info!("RECEIVED SANDBOX BOOL: {}", use_sandbox);
     app.emit("launch-status", "Launching...").unwrap();
 
     // Prepare command and arguments
@@ -290,8 +282,6 @@ pub fn run() {
             app.deep_link().on_open_url(move |event| {
                 let handle_clone = app_handle.clone();
                 let launch_args: String = extract_value(&store, "launchArgs", "".to_string());
-                let use_sandbox: bool = extract_value(&store, "sandbox", false);
-                let sandbox_path: String = extract_value(&store, "sandboxPath", "".to_string());
 
                 let urls = event.urls();
                 let owned_urls: Vec<_> = urls.into_iter().collect(); // Due to rust ownership system we must fully own every url here
@@ -299,20 +289,12 @@ pub fn run() {
                 if let Some(first_url) = owned_urls.first() {
                     if let Some(token) = first_url.query() {
                         let launch_args_clone = launch_args.clone();
-                        let sandbox_path_clone = sandbox_path.clone();
                         let token_clone = token.to_string(); // Another owned string conversion here
                         let handle_clone = handle_clone.clone(); // Clone the handle again for the async block
 
                         // Delegate launch game to tokio to prevent blocking the main thread
                         task::spawn(async move {
-                            launch_game(
-                                handle_clone,
-                                launch_args_clone,
-                                use_sandbox,
-                                sandbox_path_clone,
-                                token_clone,
-                            )
-                            .await;
+                            launch_game(handle_clone, launch_args_clone, token_clone).await;
                         });
                     }
                 }

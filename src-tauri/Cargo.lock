@@ -8,9 +8,10 @@ version = "0.1.0"
 dependencies = [
  "futures",
  "ini",
- "log",
+ "log 0.4.22",
  "pelite",
  "reqwest",
+ "sandbox",
  "serde",
  "serde_json",
  "shlex",
@@ -110,7 +111,7 @@ checksum = "05b07e8e73d720a1f2e4b6014766e6039fd2e96a4fa44e2a78d0e1fa2ff49826"
 dependencies = [
  "android_log-sys",
  "env_filter",
- "log",
+ "log 0.4.22",
 ]
 
 [[package]]
@@ -1121,7 +1122,7 @@ dependencies = [
  "dlopen2_derive",
  "libc",
  "once_cell",
- "winapi",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -1257,7 +1258,7 @@ version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4f2c92ceda6ceec50f43169f9ee8424fe2db276791afde7b2cd8bc084cb376ab"
 dependencies = [
- "log",
+ "log 0.4.22",
  "regex",
 ]
 
@@ -1329,8 +1330,14 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69ff9c9d5fb3e6da8ac2f77ab76fe7e8087d512ce095200f8f29ac5b656cf6dc"
 dependencies = [
- "log",
+ "log 0.4.22",
 ]
+
+[[package]]
+name = "field-offset"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64e9bc339e426139e02601fa69d101e96a92aee71b58bc01697ec2a63a5c9e68"
 
 [[package]]
 name = "field-offset"
@@ -1702,7 +1709,7 @@ dependencies = [
  "gobject-sys",
  "libc",
  "system-deps",
- "winapi",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -1777,7 +1784,7 @@ checksum = "93c4f5e0e20b60e10631a5f06da7fe3dda744b05ad0ea71fee2f47adf865890c"
 dependencies = [
  "atk",
  "cairo-rs",
- "field-offset",
+ "field-offset 0.3.6",
  "futures-channel",
  "gdk",
  "gdk-pixbuf",
@@ -1900,7 +1907,7 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bea68cab48b8459f17cf1c944c67ddc572d272d9f2b274140f223ecb1da4a3b7"
 dependencies = [
- "log",
+ "log 0.4.22",
  "mac",
  "markup5ever",
  "proc-macro2",
@@ -2327,7 +2334,7 @@ dependencies = [
  "cfg-if",
  "combine",
  "jni-sys",
- "log",
+ "log 0.4.22",
  "thiserror 1.0.69",
  "walkdir",
  "windows-sys 0.45.0",
@@ -2381,6 +2388,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "kernel32-sys"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
+dependencies = [
+ "winapi 0.2.8",
+ "winapi-build",
+]
+
+[[package]]
 name = "keyboard-types"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2420,7 +2437,7 @@ dependencies = [
  "gtk",
  "gtk-sys",
  "libappindicator-sys",
- "log",
+ "log 0.4.22",
 ]
 
 [[package]]
@@ -2447,7 +2464,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b67380fd3b2fbe7527a606e18729d21c6f3951633d0500574c4dc22d2d638b9f"
 dependencies = [
  "cfg-if",
- "winapi",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -2490,6 +2507,15 @@ checksum = "9374ef4228402d4b7e403e5838cb880d9ee663314b0a900d5a6aabf0c213552e"
 
 [[package]]
 name = "log"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e19e8d5c34a3e0e2223db8e060f9e8264aeeb5c5fc64a4ee9965c062211c024b"
+dependencies = [
+ "log 0.4.22",
+]
+
+[[package]]
+name = "log"
 version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
@@ -2528,7 +2554,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2629bb1404f3d34c2e921f21fd34ba00b206124c81f65c50b43b6aaefeb016"
 dependencies = [
- "log",
+ "log 0.4.22",
  "phf 0.10.1",
  "phf_codegen 0.10.0",
  "string_cache",
@@ -2611,7 +2637,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8614eb2c83d59d1c8cc974dd3f920198647674a0a035e1af1fa58707e317466"
 dependencies = [
  "libc",
- "log",
+ "log 0.4.22",
  "openssl",
  "openssl-probe",
  "openssl-sys",
@@ -2629,7 +2655,7 @@ checksum = "c3f42e7bbe13d351b6bead8286a43aac9534b82bd3cc43e47037f012ebfd62d4"
 dependencies = [
  "bitflags 2.6.0",
  "jni-sys",
- "log",
+ "log 0.4.22",
  "ndk-sys",
  "num_enum",
  "raw-window-handle",
@@ -3140,7 +3166,7 @@ dependencies = [
  "libc",
  "no-std-compat",
  "pelite-macros",
- "winapi",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -3666,7 +3692,7 @@ dependencies = [
  "hyper-util",
  "ipnet",
  "js-sys",
- "log",
+ "log 0.4.22",
  "mime",
  "native-tls",
  "once_cell",
@@ -3702,7 +3728,7 @@ dependencies = [
  "gobject-sys",
  "gtk-sys",
  "js-sys",
- "log",
+ "log 0.4.22",
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",
@@ -3867,6 +3893,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "sandbox"
+version = "0.1.0"
+source = "git+https://github.com/LEAGUE-OF-NINE/flying-sandbox-monster#181ce37796154220a90aaf6b177e12c28c4ae1b1"
+dependencies = [
+ "field-offset 0.1.1",
+ "kernel32-sys",
+ "libc",
+ "log 0.3.9",
+ "widestring",
+ "winapi 0.2.8",
+]
+
+[[package]]
 name = "schannel"
 version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3953,7 +3992,7 @@ dependencies = [
  "cssparser",
  "derive_more",
  "fxhash",
- "log",
+ "log 0.4.22",
  "matches",
  "phf 0.8.0",
  "phf_codegen 0.8.0",
@@ -4221,7 +4260,7 @@ dependencies = [
  "core-graphics",
  "foreign-types 0.5.0",
  "js-sys",
- "log",
+ "log 0.4.22",
  "objc2",
  "objc2-foundation",
  "objc2-quartz-core",
@@ -4437,7 +4476,7 @@ dependencies = [
  "jni",
  "lazy_static",
  "libc",
- "log",
+ "log 0.4.22",
  "ndk",
  "ndk-context",
  "ndk-sys",
@@ -4497,7 +4536,7 @@ dependencies = [
  "http",
  "jni",
  "libc",
- "log",
+ "log 0.4.22",
  "mime",
  "muda",
  "objc2",
@@ -4634,7 +4673,7 @@ version = "2.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56b29fa7fd330b5595f2515b8e4b4a3f566ce1e013f92e54350839ab44b58849"
 dependencies = [
- "log",
+ "log 0.4.22",
  "raw-window-handle",
  "rfd",
  "serde",
@@ -4679,7 +4718,7 @@ dependencies = [
  "byte-unit",
  "cocoa",
  "fern",
- "log",
+ "log 0.4.22",
  "objc",
  "serde",
  "serde_json",
@@ -4698,7 +4737,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ad7880c5586b6b2104be451e3d7fc0f3800c84bda69e9ba81c828f87cb34267"
 dependencies = [
  "encoding_rs",
- "log",
+ "log 0.4.22",
  "open",
  "os_pipe",
  "regex",
@@ -4735,7 +4774,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e9a580be53f04bb62422d239aa798e88522877f58a0d4a0e745f030055a51bb4"
 dependencies = [
  "dunce",
- "log",
+ "log 0.4.22",
  "serde",
  "serde_json",
  "tauri",
@@ -4772,7 +4811,7 @@ dependencies = [
  "gtk",
  "http",
  "jni",
- "log",
+ "log 0.4.22",
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",
@@ -4805,7 +4844,7 @@ dependencies = [
  "infer",
  "json-patch",
  "kuchikiki",
- "log",
+ "log 0.4.22",
  "memchr",
  "phf 0.11.2",
  "proc-macro2",
@@ -5196,7 +5235,7 @@ checksum = "89daebc3e6fd160ac4aa9fc8b3bf71e1f74fbf92367ae71fb83a037e8bf164b9"
 dependencies = [
  "memoffset",
  "tempfile",
- "winapi",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -5409,7 +5448,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d36ef12e3aaca16ddd3f67922bc63e48e953f126de60bd33ccc0101ef9998cd"
 dependencies = [
  "bumpalo",
- "log",
+ "log 0.4.22",
  "once_cell",
  "proc-macro2",
  "quote",
@@ -5528,7 +5567,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "efa8ac0d8e8ed3e3b5c9fc92c7881406a268e11555abe36493efabe649a29e09"
 dependencies = [
  "dlib",
- "log",
+ "log 0.4.22",
  "pkg-config",
 ]
 
@@ -5623,6 +5662,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "widestring"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7157704c2e12e3d2189c507b7482c52820a16dfa4465ba91add92f266667cadb"
+
+[[package]]
+name = "winapi"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
+
+[[package]]
 name = "winapi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5631,6 +5682,12 @@ dependencies = [
  "winapi-i686-pc-windows-gnu",
  "winapi-x86_64-pc-windows-gnu",
 ]
+
+[[package]]
+name = "winapi-build"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"
 
 [[package]]
 name = "winapi-i686-pc-windows-gnu"
@@ -6382,7 +6439,7 @@ dependencies = [
  "bumpalo",
  "crc32fast",
  "lockfree-object-pool",
- "log",
+ "log 0.4.22",
  "once_cell",
  "simd-adler32",
 ]

@@ -1,12 +1,10 @@
 use futures::stream::StreamExt;
 use pelite::FileMap;
 use reqwest::Client;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{env, fs};
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_deep_link::DeepLinkExt;
-use tauri_plugin_shell::process::CommandEvent;
-use tauri_plugin_shell::ShellExt;
 use tauri_plugin_store::StoreExt;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -212,67 +210,12 @@ async fn launch_game(
     let command = cmd[0].clone();
     let full_args = cmd[1..].to_vec();
 
-    // Adjust command and arguments if sandbox is enabled
-    let (command, full_args) = if use_sandbox {
-        (
-            sandbox_path.clone(),
-            vec!["LimbusCompany.exe".to_string()]
-                .into_iter()
-                .chain(full_args)
-                .collect(),
-        )
-    } else {
-        (command, full_args)
-    };
-
     // Print the command and arguments being executed for debugging
     log::info!("Executing command: {} {}", command, full_args.join(" "));
 
-    let shell = app.shell();
-    match shell
-        .command(&command)
-        .current_dir(game_dir)
-        .env("LETHE_TOKEN", token.clone())
-        .args(full_args)
-        .spawn()
-    {
-        Ok((mut rx, _child)) => {
-            // Emit event immediately upon spawning the process
-            app.emit("launch-status", "Game launched successfully!")
-                .unwrap();
-            log::info!("Game process started successfully.");
-
-            // Listen for command events (stdout, stderr, etc.)
-            let app_handle = app.clone();
-            tauri::async_runtime::spawn(async move {
-                while let Some(event) = rx.recv().await {
-                    match event {
-                        CommandEvent::Stdout(line) => {
-                            let output = String::from_utf8_lossy(&line);
-                            log::info!("Game output: {}", output);
-                            app_handle.emit("game-stdout", output.to_string()).unwrap();
-                        }
-                        CommandEvent::Stderr(line) => {
-                            let error = String::from_utf8_lossy(&line);
-                            log::error!("Game error: {}", error);
-                            app_handle.emit("game-stderr", error.to_string()).unwrap();
-                        }
-                        _ => {
-                            app_handle.emit("launch-status", "").unwrap();
-                        }
-                    }
-                }
-            });
-        }
-        Err(err) => {
-            app.emit(
-                "launch-status",
-                format!("Failed to launch the game: {}", err),
-            )
-            .unwrap();
-            log::error!("Failed to launch the game: {}", err);
-        }
-    }
+    std::env::set_var("LETHE_TOKEN", token.clone());
+    sandbox::start_game("zweilauncher", &cmd[0..].join(" "));
+    app.emit("launch-status", "").unwrap();
 }
 
 fn patch_limbus_exe(exe_path: String) -> Result<(), String> {
@@ -289,14 +232,17 @@ fn patch_limbus_exe(exe_path: String) -> Result<(), String> {
     Ok(())
 }
 
+fn set_current_dir_to_appdata() {
+    let local_appdata = env::var("LOCALAPPDATA").expect("Failed to get LOCALAPPDATA");
+    let target_dir: PathBuf = PathBuf::from(&local_appdata).join("Packages/zweilauncher/AC");
+    fs::create_dir_all(&target_dir).expect("Failed to create target directory");
+    env::set_current_dir(&target_dir).expect("Failed to set current directory");
+    log::info!("Current directory set to: {}", target_dir.display());
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let exe_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .expect("Failed to determine executable directory");
-    std::env::set_current_dir(&exe_dir)
-        .expect("Failed to set current directory to executable's directory");
+    set_current_dir_to_appdata();
 
     let mut builder = tauri::Builder::default().plugin(
         tauri_plugin_log::Builder::new()

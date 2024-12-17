@@ -3,15 +3,17 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import Modal from "./Modal";
 import { useErrorHandler } from "../context/useErrorHandler";
+import { useToast } from "../context/ToastContext";
 
 const UpdateLimbus = () => {
   const [path, setPath] = useState<string | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const handleError = useErrorHandler();
-  
+  const { showToast } = useToast();
+
   async function selectFolder() {
-    const response = await invoke<string>('steam_limbus_location');
+    const response = await invoke<string>("steam_limbus_location");
     const file = await open({
       multiple: false,
       directory: true,
@@ -31,6 +33,7 @@ const UpdateLimbus = () => {
         await invoke("download_and_install_lethe");
         setInfo("Patching limbus...");
         await invoke("patch_limbus", { srcPath: path });
+        showToast("Limbus Updated Successfully", "alert-success");
       } catch (error) {
         console.error("Failed to update limbus:", error);
         handleError(error);
@@ -39,6 +42,7 @@ const UpdateLimbus = () => {
         setModalOpen(false);
       }
     } else {
+      showToast("No folder selected", "alert-error");
       console.error("No folder selected");
     }
   }

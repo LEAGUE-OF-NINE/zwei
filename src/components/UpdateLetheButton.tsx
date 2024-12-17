@@ -11,7 +11,7 @@ const UpdateLetheButton = () => {
     try {
       setUpdating(true);
       await invoke("download_and_install_lethe");
-      showToast("Lethe updated successfully");
+      showToast("Lethe updated successfully", 'alert-success');
     } catch (error) {
       handleError(error);
       console.error("Failed to clone folder:", error);

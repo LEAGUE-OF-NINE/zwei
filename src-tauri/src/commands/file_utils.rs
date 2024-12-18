@@ -2,8 +2,27 @@ use std::{env, fs, path::Path, time::SystemTime};
 
 use super::steam::steam_limbus_location;
 
+fn get_cmd_path() -> Option<String> {
+    if let Ok(system_root) = env::var("SystemRoot") {
+        let cmd_path = format!("{}\\System32\\cmd.exe", system_root);
+        if std::path::Path::new(&cmd_path).exists() {
+            return Some(cmd_path);
+        }
+    }
+    None
+}
+
+// Sets up an appcontainer with a placeholder until limbus is installed
+fn setup_app_container() -> Result<(), String> {
+    let cmd_path = get_cmd_path().ok_or("cmd.exe not found")?;
+    sandbox::appcontainer::Profile::new("zweilauncher", &cmd_path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn clone_folder_to_game(src_path: String) -> Result<(), String> {
+    setup_app_container()?; // This is needed because otherwise the game deletes itself when launching for the first time
+
     let src = Path::new(&src_path);
     let dest = Path::new("./game");
 

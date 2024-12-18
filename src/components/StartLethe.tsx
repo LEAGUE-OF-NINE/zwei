@@ -21,6 +21,7 @@ const StartLethe = () => {
   async function startLethe() {
     try {
       await open("https://lethelc.site/zwei");
+      setMessage("Waiting for Site Launch signal...")
     } catch (error) {
       console.error("Failed to Start lethe:", error);
       handleError(error);

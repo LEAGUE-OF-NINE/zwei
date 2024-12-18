@@ -1,4 +1,7 @@
+use std::time::Duration;
+
 use tauri::{AppHandle, Emitter};
+use tokio::time::sleep;
 
 pub async fn launch_game(app: AppHandle, launch_args: String, token: String) {
     let game_dir = "./game";
@@ -26,5 +29,8 @@ pub async fn launch_game(app: AppHandle, launch_args: String, token: String) {
 
     std::env::set_var("LETHE_TOKEN", token.clone());
     sandbox::start_game("zweilauncher", &cmd[0..].join(" "));
+    app.emit("launch-status", "Launched... Please wait...")
+        .unwrap();
+    sleep(Duration::from_secs(10)).await;
     app.emit("launch-status", "").unwrap();
 }

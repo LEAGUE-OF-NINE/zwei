@@ -9,7 +9,7 @@ use zip::read::ZipArchive;
 pub async fn download_and_extract_bepinex() -> Result<(), String> {
     let url = "https://builds.bepinex.dev/projects/bepinex_be/577/BepInEx_UnityIL2CPP_x64_ec79ad0_6.0.0-be.577.zip";
     let zip_path = "BepInEx_UnityIL2CPP_x64_ec79ad0_6.0.0-be.577.zip";
-    let extract_to = "game";
+    let extract_to = "./game";
 
     download_file(url, zip_path)
         .await
@@ -21,7 +21,7 @@ pub async fn download_and_extract_bepinex() -> Result<(), String> {
 #[tauri::command]
 pub async fn download_and_install_lethe() -> Result<(), String> {
     let url = "https://api.lethelc.site/Lethe.dll";
-    let directory = "game/bepinex/plugins";
+    let directory = "./game/bepinex/plugins";
     let destination = format!("{}/Lethe.dll", directory);
 
     std::fs::create_dir_all(directory)
@@ -48,17 +48,27 @@ async fn download_file(url: &str, destination: &str) -> Result<(), Box<dyn std::
 }
 
 fn unzip_file(zip_path: &str, extract_to: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Unzipping to: {}", extract_to);
     let file = std::fs::File::open(zip_path)?;
     let mut archive = ZipArchive::new(file)?;
     std::fs::create_dir_all(extract_to)?;
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
-        let outpath = Path::new(extract_to).join(file.name());
+        let file_path = Path::new(file.name());
+        let outpath = Path::new(extract_to).join(file_path);
+
+        // Ensure the path is valid and doesn't escape the intended directory.
+        if !outpath.starts_with(extract_to) {
+            return Err(format!("Unsafe path detected: {:?}", outpath).into());
+        }
 
         if file.name().ends_with('/') {
             std::fs::create_dir_all(&outpath)?;
         } else {
+            if let Some(parent) = outpath.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
             let mut outfile = std::fs::File::create(&outpath)?;
             std::io::copy(&mut file, &mut outfile)?;
         }

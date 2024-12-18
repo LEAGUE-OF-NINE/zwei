@@ -9,12 +9,10 @@ import ViewLetheFiles from "./components/ViewLetheFilesButton";
 import { useErrorContext } from "./context/ErrorContext";
 import { useEffect } from "react";
 import { useToast } from "./context/ToastContext";
-import { useErrorHandler } from "./context/useErrorHandler";
 
 function App() {
   const { error, setError } = useErrorContext();
   const { showToast } = useToast();
-  const handleError = useErrorHandler();
 
   async function checkUpdate() {
     try {
@@ -27,7 +25,7 @@ function App() {
         );
       }
     } catch (err) {
-      handleError(err);
+      console.error(err);
     }
   }
 

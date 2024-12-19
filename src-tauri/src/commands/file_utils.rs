@@ -1,6 +1,6 @@
-use std::{env, fs, path::Path, time::SystemTime};
-
-use super::steam::steam_limbus_location;
+use crate::commands::checksum;
+use std::path::PathBuf;
+use std::{env, fs, path::Path};
 
 fn get_cmd_path() -> Option<String> {
     if let Ok(system_root) = env::var("SystemRoot") {
@@ -14,9 +14,18 @@ fn get_cmd_path() -> Option<String> {
 
 // Sets up an appcontainer with a placeholder until limbus is installed
 fn setup_app_container() -> Result<(), String> {
-    let cmd_path = get_cmd_path().ok_or("cmd.exe not found")?;
-    sandbox::appcontainer::Profile::new("zweilauncher", &cmd_path).map_err(|e| e.to_string())?;
-    Ok(())
+    #[cfg(target_os = "windows")]
+    {
+        let cmd_path = get_cmd_path().ok_or("cmd.exe not found")?;
+        sandbox::appcontainer::Profile::new("zweilauncher", &cmd_path)
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("AppContainer only works on Windows".to_string())
+    }
 }
 
 #[tauri::command]
@@ -37,9 +46,20 @@ pub async fn clone_folder_to_game(src_path: String) -> Result<(), String> {
         return Err("LimbusCompany_Data not found in the source directory.".to_string());
     }
 
-    copy_dir_all(src, dest).map_err(|e| format!("Failed to clone folder: {}", e))?;
+    let src_path = PathBuf::from(src);
+    let dst_path = PathBuf::from(dest);
+    let ok = checksum::get_manifest()
+        .await
+        .map_err(|e| e.to_string())?
+        .copy_to_folder(&src_path, &dst_path);
+    if ok.is_err() {
+        // remove LimbusCompany.exe if integrity failed to force the game to be properly copied before launch
+        if let Err(err) = fs::remove_file(dst_path) {
+            log::error!("Failed to delete LimbusCompany.exe on error: {}", err);
+        }
+    }
 
-    Ok(())
+    ok.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -82,41 +102,18 @@ pub fn open_game_folder() -> Result<(), String> {
     Ok(())
 }
 
-fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
-    std::fs::create_dir_all(&dst)?;
-    for entry in std::fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
-            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        } else {
-            std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        }
-    }
-    Ok(())
-}
-
-fn get_file_modified_time(path: &str) -> std::io::Result<SystemTime> {
-    let metadata = fs::metadata(path)?;
-    metadata.modified()
-}
-
-fn get_lethe_folder_location() -> String {
+fn get_lethe_limbus_folder_location() -> String {
     let local_appdata = env::var("LOCALAPPDATA").expect("Failed to get LOCALAPPDATA");
-    local_appdata + "/Packages/zweilauncher/AC"
+    local_appdata + "/Packages/zweilauncher/AC/game"
 }
 
 #[tauri::command]
-pub async fn check_new_limbus_version() -> Result<bool, String> {
-    let mut steam_limbus = steam_limbus_location().await;
-    steam_limbus += "/LimbusCompany.exe";
-    let steam_limbus_modified_date =
-        get_file_modified_time(&steam_limbus).map_err(|e| e.to_string())?;
-
-    let lethe_limbus = get_lethe_folder_location() + "/game/LimbusCompany.exe";
-    println!("{}", lethe_limbus);
-    let lethe_limbus_modified_date =
-        get_file_modified_time(&lethe_limbus).map_err(|e| e.to_string())?;
-
-    Ok(lethe_limbus_modified_date < steam_limbus_modified_date)
+pub async fn check_lethe_limbus_up_to_date() -> Result<bool, String> {
+    let lethe_limbus = get_lethe_limbus_folder_location();
+    let lethe_path = PathBuf::from(lethe_limbus);
+    checksum::get_manifest()
+        .await
+        .map_err(|e| e.to_string())?
+        .check_is_up_to_date(&lethe_path)
+        .map_err(|e| e.to_string())
 }

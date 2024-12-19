@@ -38,6 +38,7 @@ shlex = "1.3.0"
 tauri-plugin-log = "2"
 log = "0.4.22"
 regex = "1.11.1"
+sha1 = "0.10"  # Check for the latest version on crates.io
 
 [target.'cfg(windows)'.dependencies]
 sandbox = {git = "https://github.com/LEAGUE-OF-NINE/flying-sandbox-monster"}

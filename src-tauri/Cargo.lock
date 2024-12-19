@@ -15,6 +15,7 @@ dependencies = [
  "sandbox",
  "serde",
  "serde_json",
+ "sha1",
  "shlex",
  "steamnvke",
  "tauri",

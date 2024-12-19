@@ -2,9 +2,9 @@ use reqwest;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{write, Display, Formatter};
+use std::fs;
 use std::fs::File;
 use std::io::{Read, Stderr, Write};
-use std::os::unix::prelude::MetadataExt;
 use std::path::PathBuf;
 use std::str::FromStr;
 use regex::Regex;
@@ -27,10 +27,10 @@ impl FileInfo {
 
 }
 
-struct VersionManifest(HashMap<String, FileInfo>);
+pub struct VersionManifest(HashMap<String, FileInfo>);
 
 #[derive(Debug, PartialEq)]
-enum ManifestError {
+pub enum ManifestError {
     UnknownFile,
     FileDoesNotExist,
     MismatchedType{ wanted_dir: bool },
@@ -114,6 +114,11 @@ impl VersionManifest {
             }
 
             let src = src_dir.join(name.clone());
+            let src_metadata = fs::metadata(src.clone())?;
+            if src_metadata.len() != info.size {
+                return Err(MismatchedContent.into());
+            }
+
             let dst = dst_dir.join(name);
             let mut dst_file = File::create(&dst)?;
 
@@ -162,8 +167,8 @@ impl VersionManifest {
         }
 
         if path.is_file() {
-            let metadata = path.metadata()?;
-            if metadata.size() != info.size {
+            let metadata = fs::metadata(path.clone())?;
+            if metadata.len() != info.size {
                 return Err(MismatchedContent.into());
             }
             if calculate_checksum_while(path, process)? != info.sha {
@@ -177,7 +182,7 @@ impl VersionManifest {
 
 }
 
-async fn get_manifest() -> Result<VersionManifest, Box<dyn Error>> {
+pub(crate) async fn get_manifest() -> Result<VersionManifest, Box<dyn Error>> {
     let url = "https://api.lethelc.site/limbus-manifest.txt";
     let response = reqwest::get(url).await?.text().await?;
 

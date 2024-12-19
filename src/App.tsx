@@ -16,8 +16,8 @@ function App() {
 
   async function checkUpdate() {
     try {
-      const response = await invoke<boolean>("check_new_limbus_version");
-      if (response) {
+      const upToDate = await invoke<boolean>("check_lethe_limbus_up_to_date");
+      if (!upToDate) {
         showToast(
           "A new limbus version has been detected. Consider updating.",
           "alert-info",

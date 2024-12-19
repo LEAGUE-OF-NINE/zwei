@@ -1,5 +1,5 @@
 use commands::download::{download_and_extract_bepinex, download_and_install_lethe};
-use commands::file_utils::{check_new_limbus_version, clone_folder_to_game, open_game_folder};
+use commands::file_utils::{check_lethe_limbus_up_to_date, clone_folder_to_game, open_game_folder};
 use commands::patch::patch_limbus;
 use commands::steam::steam_limbus_location;
 use std::path::PathBuf;
@@ -52,7 +52,7 @@ pub fn run() {
             patch_limbus,
             open_game_folder,
             clone_folder_to_game,
-            check_new_limbus_version
+            check_lethe_limbus_up_to_date
         ])
         .setup(|app| {
             // Create a new store or load the existing one

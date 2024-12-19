@@ -1,7 +1,6 @@
-use std::{env, fs, path::Path, time::SystemTime};
-use std::path::PathBuf;
 use crate::commands::checksum;
-use super::steam::steam_limbus_location;
+use std::path::PathBuf;
+use std::{env, fs, path::Path};
 
 fn get_cmd_path() -> Option<String> {
     if let Ok(system_root) = env::var("SystemRoot") {
@@ -18,7 +17,8 @@ fn setup_app_container() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let cmd_path = get_cmd_path().ok_or("cmd.exe not found")?;
-        sandbox::appcontainer::Profile::new("zweilauncher", &cmd_path).map_err(|e| e.to_string())?;
+        sandbox::appcontainer::Profile::new("zweilauncher", &cmd_path)
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -102,18 +102,18 @@ pub fn open_game_folder() -> Result<(), String> {
     Ok(())
 }
 
-fn get_lethe_folder_location() -> String {
+fn get_lethe_limbus_folder_location() -> String {
     let local_appdata = env::var("LOCALAPPDATA").expect("Failed to get LOCALAPPDATA");
-    local_appdata + "/Packages/zweilauncher/AC"
+    local_appdata + "/Packages/zweilauncher/AC/game"
 }
 
 #[tauri::command]
-pub async fn check_new_limbus_version() -> Result<bool, String> {
-    let steam_limbus = steam_limbus_location().await;
-    let steam_path = PathBuf::from(steam_limbus);
+pub async fn check_lethe_limbus_up_to_date() -> Result<bool, String> {
+    let lethe_limbus = get_lethe_limbus_folder_location();
+    let lethe_path = PathBuf::from(lethe_limbus);
     checksum::get_manifest()
         .await
         .map_err(|e| e.to_string())?
-        .check_is_up_to_date(&steam_path)
+        .check_is_up_to_date(&lethe_path)
         .map_err(|e| e.to_string())
 }

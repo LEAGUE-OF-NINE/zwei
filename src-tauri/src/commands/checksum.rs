@@ -1,15 +1,16 @@
-use reqwest;
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::{write, Display, Formatter};
-use std::fs;
-use std::fs::File;
-use std::io::{Read, Stderr, Write};
-use std::path::PathBuf;
-use std::str::FromStr;
+use crate::commands::checksum::ManifestError::{
+    FileDoesNotExist, ImpossibleError, MismatchedContent, MismatchedType, UnknownFile,
+};
 use regex::Regex;
 use sha1::{Digest, Sha1};
-use crate::commands::checksum::ManifestError::{FileDoesNotExist, ImpossibleError, MismatchedContent, MismatchedType, UnknownFile};
+use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
+use std::fs;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 const FOLDER_SHA: &str = "0000000000000000000000000000000000000000";
 
@@ -20,11 +21,9 @@ struct FileInfo {
 }
 
 impl FileInfo {
-
     fn is_folder(&self) -> bool {
         self.sha == FOLDER_SHA
     }
-
 }
 
 pub struct VersionManifest(HashMap<String, FileInfo>);
@@ -33,7 +32,7 @@ pub struct VersionManifest(HashMap<String, FileInfo>);
 pub enum ManifestError {
     UnknownFile,
     FileDoesNotExist,
-    MismatchedType{ wanted_dir: bool },
+    MismatchedType { wanted_dir: bool },
     MismatchedContent,
     ImpossibleError,
 }
@@ -49,7 +48,6 @@ impl Display for ManifestError {
             ImpossibleError => write!(f, "Unknown error"),
         }
     }
-
 }
 
 impl Error for ManifestError {}
@@ -82,23 +80,17 @@ where
     Ok(hex_digest)
 }
 
-
-fn calculate_checksum(path: PathBuf) -> Result<String, Box<dyn Error>> {
-    calculate_checksum_while(path, |_| { Ok(() )})
-}
-
 impl VersionManifest {
-
-    pub fn check_is_up_to_date(&self, game_dir: &PathBuf) -> Result<bool, Box<dyn Error>> {
+    pub fn check_is_up_to_date(&self, game_dir: &Path) -> Result<bool, Box<dyn Error>> {
         let catalog = "LimbusCompany_Data/StreamingAssets/aa/catalog.json";
-        match self.check_file(game_dir, catalog, |_| { Ok(()) }) {
+        match self.check_file(game_dir, catalog, |_| Ok(())) {
             Ok(_) => Ok(true),
             Err(e) if e.downcast_ref::<ManifestError>() == Some(&MismatchedContent) => Ok(false),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 
-    pub fn copy_to_folder(&self, src_dir: &PathBuf, dst_dir: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn copy_to_folder(&self, src_dir: &Path, dst_dir: &Path) -> Result<(), Box<dyn Error>> {
         // create directories
         for (name, info) in &self.0 {
             if info.is_folder() {
@@ -124,7 +116,7 @@ impl VersionManifest {
 
             // verify integrity of src while copying to dst
             let checksum = calculate_checksum_while(src, move |chunk| {
-                if chunk.len() > 0 {
+                if !chunk.is_empty() {
                     dst_file.write_all(chunk)?;
                 } else {
                     dst_file.flush()?;
@@ -140,11 +132,16 @@ impl VersionManifest {
         Ok(())
     }
 
-    pub fn check_file<F>(&self, game_dir: &PathBuf, child: &str, process: F) -> Result<(), Box<dyn Error>>
+    pub fn check_file<F>(
+        &self,
+        game_dir: &Path,
+        child: &str,
+        process: F,
+    ) -> Result<(), Box<dyn Error>>
     where
         F: FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
     {
-        let info = match self.0.get(&child.to_string()) {
+        let info = match self.0.get(child) {
             None => return Err(UnknownFile.into()),
             Some(info) => info,
         };
@@ -157,13 +154,12 @@ impl VersionManifest {
         if path.is_dir() != info.is_folder() {
             return Err(MismatchedType {
                 wanted_dir: info.is_folder(),
-            }.into())
+            }
+            .into());
         }
 
-        if path.is_dir() {
-            if info.size == 0 {
-                return Ok(())
-            }
+        if path.is_dir() && info.size == 0 {
+            return Ok(());
         }
 
         if path.is_file() {
@@ -174,12 +170,11 @@ impl VersionManifest {
             if calculate_checksum_while(path, process)? != info.sha {
                 return Err(MismatchedContent.into());
             }
-            return Ok(())
+            return Ok(());
         }
 
         Err(ImpossibleError.into())
     }
-
 }
 
 pub(crate) async fn get_manifest() -> Result<VersionManifest, Box<dyn Error>> {
@@ -194,7 +189,7 @@ pub(crate) async fn get_manifest() -> Result<VersionManifest, Box<dyn Error>> {
     for line in response.lines() {
         if after_header {
             if line.len() < 70 {
-                continue
+                continue;
             }
 
             let size_str = line[0..14].trim();
@@ -202,7 +197,7 @@ pub(crate) async fn get_manifest() -> Result<VersionManifest, Box<dyn Error>> {
             let file_name = line[69..].trim();
             let size = u64::from_str(size_str)?;
 
-            file_map.insert(file_name.to_string(), FileInfo{ size, sha, });
+            file_map.insert(file_name.to_string(), FileInfo { size, sha });
         }
 
         after_header |= header.is_match(line);
@@ -218,19 +213,35 @@ mod tests {
     #[tokio::test]
     async fn test_manifest_fetch() -> Result<(), Box<dyn Error>> {
         let manifest = get_manifest().await?;
-        manifest.0.iter().for_each(|(key, _)| println!("File: {}", key));
+        manifest
+            .0
+            .iter()
+            .for_each(|(key, _)| println!("File: {}", key));
 
         // Test that we got some data
         assert!(!manifest.0.is_empty(), "Manifest should not be empty");
 
         // Test for specific known files
-        assert!(manifest.0.contains_key("GameAssembly.dll"), "Should contain GameAssembly.dll");
-        assert!(manifest.0.contains_key("LimbusCompany.exe"), "Should contain LimbusCompany.exe");
+        assert!(
+            manifest.0.contains_key("GameAssembly.dll"),
+            "Should contain GameAssembly.dll"
+        );
+        assert!(
+            manifest.0.contains_key("LimbusCompany.exe"),
+            "Should contain LimbusCompany.exe"
+        );
 
         // Test specific file properties
         if let Some(game_assembly) = manifest.0.get("GameAssembly.dll") {
-            assert!(game_assembly.size > 0, "GameAssembly.dll should have non-zero size");
-            assert_eq!(game_assembly.sha.len(), 40, "SHA hash should be 40 characters long");
+            assert!(
+                game_assembly.size > 0,
+                "GameAssembly.dll should have non-zero size"
+            );
+            assert_eq!(
+                game_assembly.sha.len(),
+                40,
+                "SHA hash should be 40 characters long"
+            );
         }
 
         // Print all entries for debugging
@@ -244,7 +255,6 @@ mod tests {
         Ok(())
     }
 
-
     #[tokio::test]
     async fn test_check_file() -> Result<(), Box<dyn Error>> {
         let manifest = get_manifest().await?;
@@ -253,6 +263,4 @@ mod tests {
         manifest.copy_to_folder(&src, &dst)?;
         Ok(())
     }
-
-
 }

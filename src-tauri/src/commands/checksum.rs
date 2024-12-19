@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{write, Display, Formatter};
 use std::fs::File;
-use std::io::{Read, Stderr};
+use std::io::{Read, Stderr, Write};
 use std::os::unix::prelude::MetadataExt;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -54,9 +54,9 @@ impl Display for ManifestError {
 
 impl Error for ManifestError {}
 
-fn calculate_checksum_while<F>(path: PathBuf, process: F) -> Result<String, Box<dyn Error>>
+fn calculate_checksum_while<F>(path: PathBuf, mut process: F) -> Result<String, Box<dyn Error>>
 where
-    F: Fn(&[u8]) -> Result<(), Box<dyn Error>>,
+    F: FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
 {
     // Open the file
     let mut file = File::open(&path)?;
@@ -87,18 +87,58 @@ fn calculate_checksum(path: PathBuf) -> Result<String, Box<dyn Error>> {
     calculate_checksum_while(path, |_| { Ok(() )})
 }
 
-
 impl VersionManifest {
 
     pub fn check_is_up_to_date(&self, game_dir: &PathBuf) -> Result<bool, Box<dyn Error>> {
-        match self.check_file(game_dir, "LimbusCompany_Data/StreamingAssets/aa/catalog.json") {
+        let catalog = "LimbusCompany_Data/StreamingAssets/aa/catalog.json";
+        match self.check_file(game_dir, catalog, |_| { Ok(()) }) {
             Ok(_) => Ok(true),
             Err(e) if e.downcast_ref::<ManifestError>() == Some(&MismatchedContent) => Ok(false),
             Err(e) => Err(e)
         }
     }
 
-    pub fn check_file(&self, game_dir: &PathBuf, child: &str) -> Result<(), Box<dyn Error>> {
+    pub fn copy_to_folder(&self, src_dir: &PathBuf, dst_dir: &PathBuf) -> Result<(), Box<dyn Error>> {
+        // create directories
+        for (name, info) in &self.0 {
+            if info.is_folder() {
+                let path = dst_dir.join(name);
+                std::fs::create_dir_all(path)?;
+            }
+        }
+
+        // copy files while verifying integrity
+        for (name, info) in &self.0 {
+            if info.is_folder() {
+                continue;
+            }
+
+            let src = src_dir.join(name.clone());
+            let dst = dst_dir.join(name);
+            let mut dst_file = File::create(&dst)?;
+
+            // verify integrity of src while copying to dst
+            let checksum = calculate_checksum_while(src, move |chunk| {
+                if chunk.len() > 0 {
+                    dst_file.write_all(chunk)?;
+                } else {
+                    dst_file.flush()?;
+                }
+                Ok(())
+            })?;
+
+            if checksum != info.sha {
+                return Err(MismatchedContent.into());
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn check_file<F>(&self, game_dir: &PathBuf, child: &str, process: F) -> Result<(), Box<dyn Error>>
+    where
+        F: FnMut(&[u8]) -> Result<(), Box<dyn Error>>,
+    {
         let info = match self.0.get(&child.to_string()) {
             None => return Err(UnknownFile.into()),
             Some(info) => info,
@@ -126,7 +166,7 @@ impl VersionManifest {
             if metadata.size() != info.size {
                 return Err(MismatchedContent.into());
             }
-            if calculate_checksum(path)? != info.sha {
+            if calculate_checksum_while(path, process)? != info.sha {
                 return Err(MismatchedContent.into());
             }
             return Ok(())
@@ -203,10 +243,9 @@ mod tests {
     #[tokio::test]
     async fn test_check_file() -> Result<(), Box<dyn Error>> {
         let manifest = get_manifest().await?;
-        let path = PathBuf::from("Limbus Company/");
-        let up_to_date = manifest.check_is_up_to_date(&path)?;
-        println!("Limbus is up to date: {}", up_to_date);
-
+        let src = PathBuf::from("Limbus Company/");
+        let dst = PathBuf::from("/tmp/limbus-test/");
+        manifest.copy_to_folder(&src, &dst)?;
         Ok(())
     }
 

@@ -28,9 +28,17 @@ pub async fn launch_game(app: AppHandle, launch_args: String, token: String) {
     log::info!("Executing command: {} {}", command, full_args.join(" "));
 
     std::env::set_var("LETHE_TOKEN", token.clone());
-    sandbox::start_game("zweilauncher", &cmd[0..].join(" "));
-    app.emit("launch-status", "Launched... Please wait...")
-        .unwrap();
-    sleep(Duration::from_secs(10)).await;
-    app.emit("launch-status", "").unwrap();
+    #[cfg(target_os = "windows")]
+    {
+        sandbox::start_game("zweilauncher", &cmd[0..].join(" "));
+        app.emit("launch-status", "Launched... Please wait...")
+            .unwrap();
+        sleep(Duration::from_secs(10)).await;
+        app.emit("launch-status", "").unwrap();
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        app.emit("launch-status", "Only supported on Windows currently").unwrap();
+    }
 }

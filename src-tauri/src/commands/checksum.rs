@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use regex::Regex;
 use sha1::{Digest, Sha1};
-use crate::commands::checksum::ManifestError::{MismatchedContent, MismatchedType, UnknownFile};
+use crate::commands::checksum::ManifestError::{FileDoesNotExist, ImpossibleError, MismatchedContent, MismatchedType, UnknownFile};
 
 const FOLDER_SHA: &str = "0000000000000000000000000000000000000000";
 
@@ -29,11 +29,13 @@ impl FileInfo {
 
 struct VersionManifest(HashMap<String, FileInfo>);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum ManifestError {
     UnknownFile,
+    FileDoesNotExist,
     MismatchedType{ wanted_dir: bool },
     MismatchedContent,
+    ImpossibleError,
 }
 
 impl Display for ManifestError {
@@ -43,6 +45,8 @@ impl Display for ManifestError {
             MismatchedType { wanted_dir: true } => write!(f, "Expected directory but got a file"),
             MismatchedType { wanted_dir: false } => write!(f, "Expected file but got a directory"),
             MismatchedContent => write!(f, "File does not match the checksum"),
+            FileDoesNotExist => write!(f, "File should exist but does not"),
+            ImpossibleError => write!(f, "Unknown error"),
         }
     }
 
@@ -50,7 +54,10 @@ impl Display for ManifestError {
 
 impl Error for ManifestError {}
 
-fn calculate_checksum(path: PathBuf) -> Result<String, Box<dyn Error>> {
+fn calculate_checksum_while<F>(path: PathBuf, process: F) -> Result<String, Box<dyn Error>>
+where
+    F: Fn(&[u8]) -> Result<(), Box<dyn Error>>,
+{
     // Open the file
     let mut file = File::open(&path)?;
 
@@ -58,9 +65,10 @@ fn calculate_checksum(path: PathBuf) -> Result<String, Box<dyn Error>> {
     let mut hasher = Sha1::new();
 
     // Read the file in chunks
-    let mut buffer = [0u8; 1024]; // You can adjust the chunk size as needed
+    let mut buffer = [0u8; 8192]; // You can adjust the chunk size as needed
     loop {
         let bytes_read = file.read(&mut buffer)?;
+        process(&buffer[..bytes_read])?;
         if bytes_read == 0 {
             break; // End of file
         }
@@ -74,7 +82,21 @@ fn calculate_checksum(path: PathBuf) -> Result<String, Box<dyn Error>> {
     Ok(hex_digest)
 }
 
+
+fn calculate_checksum(path: PathBuf) -> Result<String, Box<dyn Error>> {
+    calculate_checksum_while(path, |_| { Ok(() )})
+}
+
+
 impl VersionManifest {
+
+    pub fn check_is_up_to_date(&self, game_dir: &PathBuf) -> Result<bool, Box<dyn Error>> {
+        match self.check_file(game_dir, "LimbusCompany_Data/StreamingAssets/aa/catalog.json") {
+            Ok(_) => Ok(true),
+            Err(e) if e.downcast_ref::<ManifestError>() == Some(&MismatchedContent) => Ok(false),
+            Err(e) => Err(e)
+        }
+    }
 
     pub fn check_file(&self, game_dir: &PathBuf, child: &str) -> Result<(), Box<dyn Error>> {
         let info = match self.0.get(&child.to_string()) {
@@ -83,10 +105,20 @@ impl VersionManifest {
         };
 
         let path = game_dir.join(child);
+        if !path.exists() {
+            return Err(FileDoesNotExist.into());
+        }
+
         if path.is_dir() != info.is_folder() {
             return Err(MismatchedType {
                 wanted_dir: info.is_folder(),
             }.into())
+        }
+
+        if path.is_dir() {
+            if info.size == 0 {
+                return Ok(())
+            }
         }
 
         if path.is_file() {
@@ -97,9 +129,10 @@ impl VersionManifest {
             if calculate_checksum(path)? != info.sha {
                 return Err(MismatchedContent.into());
             }
+            return Ok(())
         }
 
-        Ok(())
+        Err(ImpossibleError.into())
     }
 
 }
@@ -171,11 +204,8 @@ mod tests {
     async fn test_check_file() -> Result<(), Box<dyn Error>> {
         let manifest = get_manifest().await?;
         let path = PathBuf::from("Limbus Company/");
-
-        for (name, _) in &manifest.0 {
-            let ok = manifest.check_file(&path, name).is_ok();
-            println!("{}, ok: {}", name, ok);
-        }
+        let up_to_date = manifest.check_is_up_to_date(&path)?;
+        println!("Limbus is up to date: {}", up_to_date);
 
         Ok(())
     }

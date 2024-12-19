@@ -14,9 +14,17 @@ fn get_cmd_path() -> Option<String> {
 
 // Sets up an appcontainer with a placeholder until limbus is installed
 fn setup_app_container() -> Result<(), String> {
-    let cmd_path = get_cmd_path().ok_or("cmd.exe not found")?;
-    sandbox::appcontainer::Profile::new("zweilauncher", &cmd_path).map_err(|e| e.to_string())?;
-    Ok(())
+    #[cfg(target_os = "windows")]
+    {
+        let cmd_path = get_cmd_path().ok_or("cmd.exe not found")?;
+        sandbox::appcontainer::Profile::new("zweilauncher", &cmd_path).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("AppContainer only works on Windows".to_string())
+    }
 }
 
 #[tauri::command]

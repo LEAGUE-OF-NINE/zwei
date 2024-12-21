@@ -58,6 +58,7 @@ const SettingsButton = () => {
       // Save the current arguments to the store
       await store.set("launchArgs", { value: launchArgs });
       await store.set("isSandbox", { value: isSandbox });
+      await store.set("sandboxPath", { value: sandboxPath });
       await store.save();
       console.log("Launch arguments saved successfully.");
     } catch (error) {

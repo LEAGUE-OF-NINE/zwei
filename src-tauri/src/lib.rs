@@ -11,7 +11,7 @@ use utils::extract_value;
 mod commands;
 mod utils;
 
-fn set_current_dir_to_appdata() {
+fn set_current_dir_to_container_appdata() {
     let local_appdata = env::var("LOCALAPPDATA").expect("Failed to get LOCALAPPDATA");
     let target_dir: PathBuf = PathBuf::from(&local_appdata).join("Packages/zweilauncher/AC");
     fs::create_dir_all(&target_dir).expect("Failed to create target directory");
@@ -19,9 +19,19 @@ fn set_current_dir_to_appdata() {
     log::info!("Current directory set to: {}", target_dir.display());
 }
 
+fn set_current_dir_to_exe() {
+    let exe_path = env::current_exe().expect("Failed to get current executable path");
+    let exe_dir = exe_path.parent().expect("Failed to get parent directory");
+
+    env::set_current_dir(exe_dir)
+        .expect("Failed to set current directory to executable's location");
+
+    log::info!("Current directory set to: {}", exe_dir.display());
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    set_current_dir_to_appdata();
+    set_current_dir_to_exe();
 
     let mut builder = tauri::Builder::default().plugin(
         tauri_plugin_log::Builder::new()
@@ -70,6 +80,8 @@ pub fn run() {
             app.deep_link().on_open_url(move |event| {
                 let handle_clone = app_handle.clone();
                 let launch_args: String = extract_value(&store, "launchArgs", "".to_string());
+                let is_sandbox: bool = extract_value(&store, "isSandbox", true);
+                let sandbox_path: String = extract_value(&store, "sandboxPath", "".to_string());
 
                 let urls = event.urls();
                 let owned_urls: Vec<_> = urls.into_iter().collect(); // Due to rust ownership system we must fully own every url here
@@ -86,6 +98,8 @@ pub fn run() {
                                 handle_clone,
                                 launch_args_clone,
                                 token_clone,
+                                is_sandbox,
+                                sandbox_path,
                             )
                             .await;
                         });

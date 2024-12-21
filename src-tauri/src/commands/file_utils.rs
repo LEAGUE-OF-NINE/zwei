@@ -30,8 +30,6 @@ fn setup_app_container() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn clone_folder_to_game(src_path: String) -> Result<(), String> {
-    setup_app_container()?; // This is needed because otherwise the game deletes itself when launching for the first time
-
     let src = Path::new(&src_path);
     let dest = Path::new("./game");
 

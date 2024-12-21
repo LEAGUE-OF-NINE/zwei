@@ -1,13 +1,12 @@
 # Zwei - Lethe Launcher
 
-Zwei is a simple and efficient launcher for the [Lethe](https://lethelc.site) private server for *Limbus Company*. It streamlines the installation process for BepInEx and the Lethe plugin, while also providing tools to manage updates, prevent Steam interactions, and more.
+Zwei is a simple launcher for the [Lethe](https://lethelc.site) private server for Limbus Company. It streamlines the installation process for BepInEx and the Lethe plugin, while also providing tools to manage updates, prevent Steam interactions, and more.
 
 ## Key Features
 
-- **Isolated Game Environment**: Creates a clone of *Limbus Company* to prevent conflicts with your main installation.
-- **Automatic Installation**: Installs BepInEx and the Lethe plugin with a single click.
-- **Steam Blocker**: Prevents *Limbus Company* from accessing Steam, ensuring a seamless private server experience.
-- **Easy Updates**: Update Lethe with a single click.
+- **Isolated Game Environment**: Uses Windows app containers to create a sandboxed clone of the game, ensuring a secure and isolated environment for your Lethe installation.
+- **Effortless Installation**: Installs BepInEx and the Lethe plugin with a single click.
+- **Steam Bypass**: Completely patches steam out of the cloned installation.
 
 ## Installation Guide
 
@@ -25,7 +24,7 @@ Zwei is a simple and efficient launcher for the [Lethe](https://lethelc.site) pr
 
 ### 4. Select Your Original Limbus Folder
 
-- When prompted, navigate to the directory where your original *Limbus Company* installation is located. Zwei will automatically create a clone and install the necessary mods.
+- When prompted, navigate to the directory where your original Limbus Company installation is located. Zwei will automatically create a clone and install the necessary mods.
 
 ### 5. Zwei Will Handle Everything
 
@@ -33,4 +32,4 @@ Zwei is a simple and efficient launcher for the [Lethe](https://lethelc.site) pr
 
 ### 6. Launch Limbus with Lethe
 
-- To start *Limbus Company* with the Lethe private server, click the **"Launch"** button. Zwei will launch the game with the required configurations, blocking any Steam access.
+- To start Limbus Company with the Lethe private server, click the **"Launch"** button. Zwei will launch the game with the required configurations, blocking any Steam access.

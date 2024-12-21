@@ -80,7 +80,7 @@ pub fn run() {
             app.deep_link().on_open_url(move |event| {
                 let handle_clone = app_handle.clone();
                 let launch_args: String = extract_value(&store, "launchArgs", "".to_string());
-                let is_sandbox: bool = extract_value(&store, "isSandbox", true);
+                let is_sandbox: bool = extract_value(&store, "isSandbox", false);
                 let sandbox_path: String = extract_value(&store, "sandboxPath", "".to_string());
 
                 let urls = event.urls();

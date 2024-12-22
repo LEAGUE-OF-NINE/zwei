@@ -72,13 +72,23 @@ const UpdateLimbus = () => {
           </>
         }
       >
-        <input
-          type="text"
-          className="input w-full mb-4 bg-base-200 hover:cursor-pointer border-disabled"
-          onClick={selectFolder}
-          placeholder={path || "Select Limbus Folder..."}
-          readOnly
-        />
+        <label className="form-control w-full">
+          <div className="label">
+            <span className="label-text">
+              Select your original Limbus Company folder
+            </span>
+          </div>
+          <input
+            type="text"
+            className="input w-full mb-4 bg-base-200 hover:cursor-pointer border-disabled"
+            onClick={selectFolder}
+            placeholder={path || "Select Limbus Folder..."}
+            readOnly
+          />
+          <div className="label">
+            <span className="label-text-alt">Zwei will make a copy of it and install Lethe on it</span>
+          </div>
+        </label>
         {info && <p>{info}</p>}
       </Modal>
     </div>

@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { IoMdSettings } from "react-icons/io";
 import Modal from "./Modal";
 import { load } from "@tauri-apps/plugin-store";
-import { open } from "@tauri-apps/plugin-dialog"; 
+import { open } from "@tauri-apps/plugin-dialog";
 import { useErrorHandler } from "../context/useErrorHandler";
+import { invoke } from "@tauri-apps/api/core";
+import { useToast } from "../context/ToastContext";
 
 const SettingsButton = () => {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -11,6 +13,7 @@ const SettingsButton = () => {
   const [isSandbox, setIsSandbox] = useState(false);
   const [sandboxPath, setSandboxPath] = useState<string | null>("");
   const handleError = useErrorHandler();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const loadArgs = async () => {
@@ -41,7 +44,7 @@ const SettingsButton = () => {
 
   const toggleSandbox = () => {
     setIsSandbox(!isSandbox);
-  }
+  };
 
   async function selectFile() {
     const file = await open({
@@ -66,6 +69,82 @@ const SettingsButton = () => {
       console.error("Failed to save launch arguments:", error);
     } finally {
       setModalOpen(false);
+    }
+  };
+
+  // Sandboxie actions
+  const permitPluginsFolder = async () => {
+    try {
+      await invoke("sandboxie_permit_plugins_folder");
+      showToast("Sandboxie plugin folder permitted.", "alert-success");
+    } catch (error) {
+      showToast(
+        `Error: ${error}`,
+        "alert-error"
+      );
+      handleError(error);
+    }
+  };
+
+  const blockCacheFolders = async () => {
+    try {
+      await invoke("sandboxie_block_cache_folders");
+      showToast(
+        "Access to main cache folders has been blocked.",
+        "alert-success"
+      );
+    } catch (error) {
+      showToast(
+        `Error: ${error}`,
+        "alert-error"
+      );
+      handleError(error);
+    }
+  };
+
+  const revokePluginsFolder = async () => {
+    try {
+      await invoke("sandboxie_revoke_plugins_folder");
+      showToast("Sandboxie plugin folder revoked.", "alert-success");
+    } catch (error) {
+      showToast(
+        `Error: ${error}`,
+        "alert-error"
+      );
+      handleError(error);
+    }
+  };
+
+  const unblockCacheFolders = async () => {
+    try {
+      await invoke("sandboxie_unblock_cache_folders");
+      showToast("Access to main cache folders unblocked.", "alert-success");
+    } catch (error) {
+      showToast(
+        `Error: ${error}`,
+        "alert-error"
+      );
+      handleError(error);
+    }
+  };
+
+  const blockRegistry = async () => {
+    try {
+      await invoke("sandboxie_block_user_registry");
+      showToast("User registry blocked.", "alert-success");
+    } catch (error) {
+      showToast(`Error: ${error}`, "alert-error");
+      handleError(error);
+    }
+  };
+
+  const unblockRegistry = async () => {
+    try {
+      await invoke("sandboxie_unblock_user_registry");
+      showToast("User registry unblocked.", "alert-success");
+    } catch (error) {
+      showToast(`Error: ${error}`, "alert-error");
+      handleError(error);
     }
   };
 
@@ -102,24 +181,53 @@ const SettingsButton = () => {
           </div>
         </div>
         <label className="form-control w-full">
-            <div className="label">
-              <span className="label-text">Sandboxie "Start.exe" path</span>
-            </div>
-            <input
-              type="text"
-              className="input w-full bg-base-200 hover:cursor-pointer border-disabled"
-              onClick={selectFile}
-              placeholder={
-                sandboxPath || `Select Sandboxie "Start.exe" file...`
-              }
-              readOnly
-            />
-          </label>
+          <div className="label">
+            <span className="label-text">Sandboxie "Start.exe" path</span>
+          </div>
+          <input
+            type="text"
+            className="input w-full bg-base-200 hover:cursor-pointer border-disabled"
+            onClick={selectFile}
+            placeholder={sandboxPath || `Select Sandboxie "Start.exe" file...`}
+            readOnly
+          />
+        </label>
         <div className="form-control">
           <label className="label cursor-pointer">
             <span className="label-text">Process Isolation</span>
-            <input type="checkbox" className="toggle toggle-primary" checked={isSandbox} onChange={toggleSandbox} />
+            <input
+              type="checkbox"
+              className="toggle toggle-primary"
+              checked={isSandbox}
+              onChange={toggleSandbox}
+            />
           </label>
+        </div>
+        <div className="mt-4 flex flex-col gap-2">
+          <p className="text-warning">
+            The settings below require administrator access, make sure you are
+            running as admin.
+          </p>
+          <div className=" grid grid-rows-2 grid-cols-3 gap-x-2">
+            <button className="btn btn-sm btn-success" onClick={permitPluginsFolder}>
+              Permit Plugins Folder
+            </button>
+            <button className="btn btn-sm btn-success" onClick={blockCacheFolders}>
+              Block Cache Folders
+            </button>
+            <button className="btn btn-sm btn-success" onClick={blockRegistry}>
+              Block Registry
+            </button>
+            <button className="btn btn-sm btn-error" onClick={revokePluginsFolder}>
+              Revoke Plugins Folder
+            </button>
+            <button className="btn btn-sm btn-error" onClick={unblockCacheFolders}>
+              Unblock Cache Folders
+            </button>
+            <button className="btn btn-sm btn-error" onClick={unblockRegistry}>
+              Unblock Registry
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

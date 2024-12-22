@@ -28,6 +28,31 @@ fn setup_app_container() -> Result<(), String> {
     }
 }
 
+pub struct CacheDirectories {
+    pub local_app_data: PathBuf,
+    pub roaming: PathBuf,
+    pub local_low: PathBuf,
+}
+
+pub fn get_cache_directories() -> Result<CacheDirectories, String> {
+    // Local App Data
+    let local_app_data = dirs::data_local_dir().ok_or("Local App Data directory not found.")?;
+
+    // Roaming App Data
+    let roaming = dirs::config_dir().ok_or("Roaming directory not found.")?;
+
+    // LocalLow App Data
+    let local_low = dirs::home_dir()
+        .map(|home| home.join("AppData").join("LocalLow"))
+        .ok_or("LocalLow directory not found.")?;
+
+    Ok(CacheDirectories {
+        local_app_data,
+        roaming,
+        local_low,
+    })
+}
+
 #[tauri::command]
 pub async fn clone_folder_to_game(src_path: String) -> Result<(), String> {
     let src = Path::new(&src_path);
@@ -100,18 +125,28 @@ pub fn open_game_folder() -> Result<(), String> {
     Ok(())
 }
 
-fn get_lethe_limbus_folder_location() -> String {
-    let local_appdata = env::var("LOCALAPPDATA").expect("Failed to get LOCALAPPDATA");
-    local_appdata + "/Packages/zweilauncher/AC/game"
+pub fn get_lethe_limbus_folder_location() -> Result<PathBuf, String> {
+    let current_dir =
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+
+    // Construct the full path to ./game from the current directory
+    let game_dir = current_dir.join("game");
+
+    Ok(game_dir)
+}
+
+pub fn get_lethe_plugins_folder_location() -> Result<PathBuf, String> {
+    let dir = get_lethe_limbus_folder_location()?;
+    let plugins_folder = dir.join("bepinex").join("plugins");
+    Ok(plugins_folder)
 }
 
 #[tauri::command]
 pub async fn check_lethe_limbus_up_to_date() -> Result<bool, String> {
-    let lethe_limbus = get_lethe_limbus_folder_location();
-    let lethe_path = PathBuf::from(lethe_limbus);
+    let lethe_limbus = get_lethe_limbus_folder_location()?;
     checksum::get_manifest()
         .await
         .map_err(|e| e.to_string())?
-        .check_is_up_to_date(&lethe_path)
+        .check_is_up_to_date(&lethe_limbus)
         .map_err(|e| e.to_string())
 }

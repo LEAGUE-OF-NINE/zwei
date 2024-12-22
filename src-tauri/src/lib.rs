@@ -1,6 +1,11 @@
 use commands::download::{download_and_extract_bepinex, download_and_install_lethe};
 use commands::file_utils::{check_lethe_limbus_up_to_date, clone_folder_to_game, open_game_folder};
 use commands::patch::patch_limbus;
+use commands::sandboxie::{
+    sandboxie_block_cache_folders, sandboxie_block_user_registry, sandboxie_permit_plugins_folder,
+    sandboxie_revoke_plugins_folder, sandboxie_unblock_cache_folders,
+    sandboxie_unblock_user_registry,
+};
 use commands::steam::steam_limbus_location;
 use std::path::PathBuf;
 use std::{env, fs};
@@ -9,6 +14,7 @@ use tauri_plugin_store::StoreExt;
 use tokio::task;
 use utils::extract_value;
 mod commands;
+mod utf16le_utils;
 mod utils;
 
 fn set_current_dir_to_container_appdata() {
@@ -62,7 +68,13 @@ pub fn run() {
             patch_limbus,
             open_game_folder,
             clone_folder_to_game,
-            check_lethe_limbus_up_to_date
+            check_lethe_limbus_up_to_date,
+            sandboxie_permit_plugins_folder,
+            sandboxie_block_cache_folders,
+            sandboxie_revoke_plugins_folder,
+            sandboxie_unblock_cache_folders,
+            sandboxie_unblock_user_registry,
+            sandboxie_block_user_registry
         ])
         .setup(|app| {
             // Create a new store or load the existing one

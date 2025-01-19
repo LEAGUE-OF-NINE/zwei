@@ -7,8 +7,7 @@ use commands::sandboxie::{
     sandboxie_unblock_user_registry,
 };
 use commands::steam::steam_limbus_location;
-use std::path::PathBuf;
-use std::{env, fs};
+use std::env;
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_store::StoreExt;
 use tokio::task;
@@ -16,14 +15,6 @@ use utils::extract_value;
 mod commands;
 mod utf16le_utils;
 mod utils;
-
-fn set_current_dir_to_container_appdata() {
-    let local_appdata = env::var("LOCALAPPDATA").expect("Failed to get LOCALAPPDATA");
-    let target_dir: PathBuf = PathBuf::from(&local_appdata).join("Packages/zweilauncher/AC");
-    fs::create_dir_all(&target_dir).expect("Failed to create target directory");
-    env::set_current_dir(&target_dir).expect("Failed to set current directory");
-    log::info!("Current directory set to: {}", target_dir.display());
-}
 
 fn set_current_dir_to_exe() {
     let exe_path = env::current_exe().expect("Failed to get current executable path");

@@ -12,19 +12,8 @@ const SettingsButton = () => {
   const [launchArgs, setLaunchArgs] = useState<string>("");
   const [isSandbox, setIsSandbox] = useState(false);
   const [sandboxPath, setSandboxPath] = useState<string | null>("");
-  const [isCnFirewall, setIsCnFirewall] = useState(false);
   const handleError = useErrorHandler();
   const { showToast } = useToast();
-
-  const chineseTimezones = [
-    "Asia/Shanghai",
-    "Asia/Chongqing",
-    "Asia/Harbin",
-    "Asia/Urumqi",
-    "Asia/Kashgar",
-  ];
-
-  const isChina = chineseTimezones.includes(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   useEffect(() => {
     const loadArgs = async () => {
@@ -36,7 +25,6 @@ const SettingsButton = () => {
         const launchArgsData = await store.get<{ value: string }>("launchArgs");
         const sandboxPath = await store.get<{ value: string }>("sandboxPath");
         const isSandbox = await store.get<{ value: boolean }>("isSandbox");
-        const isCnFirewall = await store.get<{ value: boolean }>("isCnFirewall");
 
         // Log retrieved values for debugging
         console.log("Launch Args:", launchArgsData);
@@ -45,7 +33,6 @@ const SettingsButton = () => {
         setLaunchArgs(launchArgsData?.value ?? "");
         setIsSandbox(isSandbox?.value ?? true);
         setSandboxPath(sandboxPath?.value ?? null);
-        setIsCnFirewall(isCnFirewall?.value ?? isChina);
       } catch (error) {
         console.error("Failed to load settings:", error);
         handleError(error);
@@ -58,10 +45,6 @@ const SettingsButton = () => {
   const toggleSandbox = () => {
     setIsSandbox(!isSandbox);
   };
-
-  const toggleCnFirewall = () => {
-    setIsCnFirewall(!isCnFirewall);
-  }
 
   async function selectFile() {
     const file = await open({
@@ -217,15 +200,6 @@ const SettingsButton = () => {
               className="toggle toggle-primary"
               checked={isSandbox}
               onChange={toggleSandbox}
-            />
-          </label>
-          <label className="label cursor-pointer">
-            <span className="label-text">绕过中国防火长城</span>
-            <input
-                type="checkbox"
-                className="toggle toggle-primary"
-                checked={isCnFirewall}
-                onChange={toggleCnFirewall}
             />
           </label>
         </div>

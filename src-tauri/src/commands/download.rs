@@ -31,7 +31,7 @@ pub async fn download_and_install_lethe() -> Result<(), String> {
         .await
         .map_err(|e| format!("Failed to download the file: {}", e))?;
 
-    let url = "https://api.lethelc.site/libraries/BepInEx.cfg";
+    let url = "https://lethelc.site/libraries/BepInEx.cfg";
     let directory = "./game/bepinex/config";
     let destination = format!("{}/BepInEx.cfg", directory);
 

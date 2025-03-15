@@ -7,7 +7,7 @@ use zip::read::ZipArchive;
 
 #[tauri::command]
 pub async fn download_and_extract_bepinex() -> Result<(), String> {
-    let url = "https://builds.bepinex.dev/projects/bepinex_be/577/BepInEx_UnityIL2CPP_x64_ec79ad0_6.0.0-be.577.zip";
+    let url = "https://lethelc.site/libraries/BepInEx577.zip";
     let zip_path = "BepInEx_UnityIL2CPP_x64_ec79ad0_6.0.0-be.577.zip";
     let extract_to = "./game";
 
@@ -23,6 +23,17 @@ pub async fn download_and_install_lethe() -> Result<(), String> {
     let url = "https://api.lethelc.site/Lethe.dll";
     let directory = "./game/bepinex/plugins";
     let destination = format!("{}/Lethe.dll", directory);
+
+    std::fs::create_dir_all(directory)
+        .map_err(|err| format!("Failed to create dirs recursively: {}", err))?;
+
+    download_file(url, &destination)
+        .await
+        .map_err(|e| format!("Failed to download the file: {}", e))?;
+
+    let url = "https://api.lethelc.site/libraries/BepInEx.cfg";
+    let directory = "./game/bepinex/config";
+    let destination = format!("{}/BepInEx.cfg", directory);
 
     std::fs::create_dir_all(directory)
         .map_err(|err| format!("Failed to create dirs recursively: {}", err))?;

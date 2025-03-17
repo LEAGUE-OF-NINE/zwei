@@ -43,7 +43,10 @@ impl Display for ManifestError {
             UnknownFile => write!(f, "File is not list in the manifest"),
             MismatchedType { wanted_dir: true } => write!(f, "Expected directory but got a file"),
             MismatchedType { wanted_dir: false } => write!(f, "Expected file but got a directory"),
-            MismatchedContent => write!(f, "File does not match the checksum"),
+            MismatchedContent => write!(
+                f,
+                "File does not match the checksum. Make sure your steam version is updated."
+            ),
             FileDoesNotExist => write!(f, "File should exist but does not"),
             ImpossibleError => write!(f, "Unknown error"),
         }

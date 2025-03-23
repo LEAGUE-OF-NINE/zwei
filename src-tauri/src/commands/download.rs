@@ -7,8 +7,8 @@ use zip::read::ZipArchive;
 
 #[tauri::command]
 pub async fn download_and_extract_bepinex() -> Result<(), String> {
-    let url = "https://lethelc.site/libraries/BepInEx577.zip";
-    let zip_path = "BepInEx_UnityIL2CPP_x64_ec79ad0_6.0.0-be.577.zip";
+    let url = "https://builds.bepinex.dev/projects/bepinex_be/733/BepInEx-Unity.IL2CPP-win-x64-6.0.0-be.733%2B995f049.zip";
+    let zip_path = "BepInEx-Unity.IL2CPP-win-x64-6.0.0-be.733+995f049.zip";
     let extract_to = "./game";
 
     download_file(url, zip_path)
